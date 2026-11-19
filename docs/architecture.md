@@ -39,3 +39,9 @@ Typed text and clarification state live in document memory. History entries carr
 Files under `src/data/` are public build inputs. The demonstration records are fictional. The portfolio's own architectural decision describes this implementation. Keep private source documents and evidence mapping outside the build graph and tracked files. Approved content can carry a publication-safe evidence reference.
 
 Core features have no network-service dependency. A future contact service can be an optional client adapter calling a Pages Function without changing the intent or evaluation modules. Keep private credentials on the server.
+
+## Theme preferences
+
+Editorial Spectrum lives in CSS. The document exposes the selected preference and the effective light or dark scheme through root data attributes. A small script in the HTML head reads the manual choice before React mounts. System mode follows the browser's color-scheme media query through a native listener. OS changes update the root attributes without running the intent pipeline or re-rendering React.
+
+Only the theme preference is stored. Choosing System removes the stored override. If storage is unavailable, manual choices work for the current document. The early script duplicates the storage key and initial selection rule to avoid waiting for the application bundle or a second asset. Tests exercise the actual bootstrap and the runtime behavior. A future strict script CSP will need to account for the inline bootstrap.

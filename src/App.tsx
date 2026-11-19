@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent } from 'react'
 
 import { Inspector } from './components/Inspector'
+import { ThemeControl } from './components/ThemeControl'
 import { entries } from './data/content'
 import { evaluate } from './evaluation/evaluate'
 import { goals, goalLabels, type Goal } from './intent/model'
@@ -97,28 +98,31 @@ export function App({ navigation, initialView }: {
           <nav aria-label="Portfolio">
             {goals.map(goal => (
               <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
-                aria-current={activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
+                data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
             ))}
           </nav>
-          <button className="inspect-toggle" ref={inspectorToggle} type="button" aria-pressed={inspect}
-            aria-controls={inspect ? 'inspector' : undefined} onClick={() => setInspect(enabled => !enabled)}>
-            <span aria-hidden="true">[ ]</span> Inspector
-          </button>
+          <div className="header-actions">
+            <ThemeControl />
+            <button className="inspect-toggle" ref={inspectorToggle} type="button" aria-pressed={inspect}
+              aria-controls={inspect ? 'inspector' : undefined} onClick={() => setInspect(enabled => !enabled)}>
+              Inspector
+            </button>
+          </div>
         </div>
       </header>
 
       <main id="main" tabIndex={-1} className="page-width">
         <section className="hero" aria-labelledby="intro-heading">
           <div className="intro">
-            <p className="eyebrow"><span /> SOFTWARE ENGINEERING PORTFOLIO</p>
-            <h1 id="intro-heading">Explore the work.<br />Follow your intent.</h1>
+            <p className="eyebrow">Software engineering portfolio</p>
+            <h1 id="intro-heading">Explore the work.<br /><em>Follow your intent.</em></h1>
             <p className="intro-copy">A portfolio about building software for complex systems. Browse projects, compare experience, or look inside the decisions that shaped the work.</p>
           </div>
           <div className="search-panel">
             <form onSubmit={submit}>
               <label htmlFor="query">What would you like to find?</label>
               <div className="search-row">
-                <input id="query" ref={search} type="search" value={draft} maxLength={maxQueryLength}
+                <input id="query" ref={search} type="search" autoComplete="off" value={draft} maxLength={maxQueryLength}
                   onChange={event => setDraft(event.target.value)} placeholder="Show me your backend projects"
                   aria-describedby="query-help" />
                 <button type="submit">Search</button>
@@ -133,11 +137,11 @@ export function App({ navigation, initialView }: {
           </div>
         </section>
 
-        <section className="explorer" aria-labelledby="results">
+        <section className="explorer" data-goal={activeGoal} aria-labelledby="results">
           <nav className="goal-links" aria-label="Choose a visitor goal">
             {goals.map(goal => (
               <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
-                aria-current={activeGoal === goal ? 'page' : undefined}>{goalLabels[goal]}</a>
+                data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{goalLabels[goal]}</a>
             ))}
           </nav>
           <div className="result-heading">

@@ -9,8 +9,8 @@ const registry: Registry = {
   cards: items => (
     <div className="card-grid">
       {items.map(entry => (
-        <article className="card" key={entry.id}>
-          <p className="category">{entry.categories.join(' / ')}</p>
+        <article className="card" data-category={entry.categories[0]} key={entry.id}>
+          <CategoryList entry={entry} />
           <h3>{entry.title}</h3>
           <p>{entry.summary}</p>
           <TagList values={entry.technologies} />
@@ -34,7 +34,7 @@ const registry: Registry = {
           <tbody>
             {items.map(entry => (
               <tr key={entry.id}>
-                <th scope="row">{entry.title}<span>{entry.summary}</span></th>
+                <th scope="row">{entry.title}<p>{entry.summary}</p><CategoryList entry={entry} /></th>
                 <td>{entry.capabilities?.join(', ') || 'Unspecified'}</td>
                 <td>{entry.technologies?.join(', ') || 'Unspecified'}</td>
               </tr>
@@ -55,7 +55,7 @@ const registry: Registry = {
       <h3>Experience timeline</h3>
       <ol className="timeline">
         {[...items].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).map(entry => (
-          <li key={entry.id}><time dateTime={entry.date}>{entry.date}</time><div><h4>{entry.title}</h4><p>{entry.summary}</p></div></li>
+          <li key={entry.id} data-category={entry.categories[0]}><time dateTime={entry.date}>{entry.date}</time><div><h4>{entry.title}</h4><p>{entry.summary}</p></div></li>
         ))}
       </ol>
     </div>
@@ -82,6 +82,15 @@ const registry: Registry = {
   ),
 }
 
+function CategoryList({ entry }: { entry: Entry }) {
+  if (!entry.categories.length) return null
+  return (
+    <ul className="categories" aria-label="Categories">
+      {entry.categories.map(category => <li key={category} data-category={category}>{category}</li>)}
+    </ul>
+  )
+}
+
 function TagList({ values }: { values?: readonly string[] }) {
   if (!values?.length) return null
   return <ul className="tags">{values.map(value => <li key={value}>{value}</li>)}</ul>
@@ -91,6 +100,7 @@ function DecisionDetail({ entry }: { entry: Entry }) {
   return (
     <div className="decision-detail">
       <p>{entry.summary}</p>
+      <CategoryList entry={entry} />
       <dl>
         {entry.problem && <div><dt>Problem</dt><dd>{entry.problem}</dd></div>}
         {entry.decision && <div><dt>Decision</dt><dd>{entry.decision}</dd></div>}
