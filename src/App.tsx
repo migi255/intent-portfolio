@@ -8,7 +8,7 @@ import { goals, goalLabels, type Goal } from './intent/model'
 import { maxQueryLength } from './intent/vocabulary'
 import { planInterface } from './planning/plan'
 import { Renderer } from './renderer/Renderer'
-import { queryView, viewSearch, type createNavigation, type ViewState } from './state/navigation'
+import { caseStudyView, queryView, viewSearch, type createNavigation, type ViewState } from './state/navigation'
 
 const examples = ['Backend projects', 'Projects using Python', 'APIs but not coursework', 'System architecture']
 const navLabels: Record<Goal, string> = { projects: 'Projects', experience: 'Experience', decisions: 'Engineering decisions' }
@@ -69,10 +69,10 @@ export function App({ navigation, initialView }: {
     setTransition(previous => previous + 1)
   }
 
-  function selectGoal(event: MouseEvent<HTMLAnchorElement>, goal: Goal) {
+  function followView(event: MouseEvent<HTMLAnchorElement>, next: ViewState) {
     if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return
     event.preventDefault()
-    navigate(queryView(goal))
+    navigate(next)
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -97,7 +97,7 @@ export function App({ navigation, initialView }: {
           <a className="wordmark" href="./"><span className="brand-mark" aria-hidden="true" />Intent Portfolio</a>
           <nav aria-label="Portfolio">
             {goals.map(goal => (
-              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
+              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => followView(event, queryView(goal))}
                 data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
             ))}
           </nav>
@@ -140,7 +140,7 @@ export function App({ navigation, initialView }: {
         <section className="explorer" data-goal={activeGoal} aria-labelledby="results">
           <nav className="goal-links" aria-label="Choose a visitor goal">
             {goals.map(goal => (
-              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
+              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => followView(event, queryView(goal))}
                 data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{goalLabels[goal]}</a>
             ))}
           </nav>
@@ -149,7 +149,7 @@ export function App({ navigation, initialView }: {
               <h2 id="results" tabIndex={-1}>{goalLabels[activeGoal]}</h2>
               <p>{descriptions[activeGoal]}</p>
             </div>
-            <p className="demo-label">Demonstration content</p>
+            <p className="demo-label">{result?.matches.some(entry => entry.evidence.status === 'draft') ? 'Includes draft content for review' : 'Demonstration content'}</p>
           </div>
           {(view.query || hasSharedFilters) && <p className="committed-query">
             {view.query ? <>Search <strong>{view.query}</strong></> : 'Shared filters'}
@@ -180,7 +180,13 @@ export function App({ navigation, initialView }: {
               <button type="button" onClick={() => navigate(queryView(activeGoal))}>Clear search</button>
             </div>
           )}
-          {plan && result?.matches.length ? <Renderer plan={plan} entries={entries} /> : null}
+          {plan && result?.matches.length ? <Renderer plan={plan} entries={entries} caseStudyLink={entry => {
+            const next = caseStudyView(entry.id)
+            return <a className="case-study-link" href={navigation.href(next)} aria-label={`Read case study for ${entry.title}`}
+              onClick={event => followView(event, next)}>
+              Read case study
+            </a>
+          }} /> : null}
         </section>
 
         {inspect && <Inspector view={view} intent={intent} result={result} plan={plan} heading={inspectorHeading} onClose={closeInspector} />}

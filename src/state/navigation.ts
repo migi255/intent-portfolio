@@ -13,6 +13,23 @@ export function queryView(goal: Goal, query = '', chosenGoal?: Goal): ViewState 
   return { goal, query, intent: parseIntent(query, goal, chosenGoal) }
 }
 
+export function caseStudyView(entryId: string): ViewState {
+  return {
+    goal: 'decisions',
+    query: '',
+    intent: {
+      status: 'resolved',
+      goal: 'decisions',
+      presentation: 'case-study',
+      expression: {
+        type: 'and',
+        left: resolveGoal('decisions').expression,
+        right: { type: 'predicate', predicate: { field: 'id', value: entryId } },
+      },
+    },
+  }
+}
+
 export function readView(search: string): ViewState {
   const params = new URLSearchParams(search)
   const requestedGoal = params.get('view')

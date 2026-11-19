@@ -1,4 +1,4 @@
-import type { Kind } from '../data/content.js'
+import { entries, type Kind } from '../data/content.js'
 import type { Expression, Goal, Intent, Presentation } from './model.js'
 import { maxQueryLength, tokenize, type Word } from './vocabulary.js'
 
@@ -50,7 +50,10 @@ export function parseIntent(query: string, fallback: Goal = 'projects', chosenGo
       return { status: 'ambiguous', message: 'This query points to more than one layout. Choose how to view the matches.', goals: candidates }
     }
     if (presentations.size > 1) return unsupported('Request one layout at a time, such as comparison or timeline.')
-    const goal = chosenGoal ?? candidates[0] ?? fallback
+    const namedKind = expression?.type === 'predicate' && expression.predicate.field === 'id'
+      ? entries.find(entry => entry.id === expression.predicate.value)?.kind
+      : undefined
+    const goal = chosenGoal ?? candidates[0] ?? (namedKind ? goalForKind[namedKind] : fallback)
     const requestedPresentation = [...presentations][0] ?? 'default'
     const presentation = requestedPresentation !== 'default' && goalForPresentation[requestedPresentation] === goal
       ? requestedPresentation : 'default'

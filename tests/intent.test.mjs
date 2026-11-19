@@ -4,6 +4,7 @@ import test from 'node:test'
 import { entries } from '../.test-build/data/content.js'
 import { evaluate } from '../.test-build/evaluation/evaluate.js'
 import { parseIntent, resolveGoal } from '../.test-build/intent/parser.js'
+import { createTokenizer } from '../.test-build/intent/vocabulary.js'
 import { planInterface, validatePlan } from '../.test-build/planning/plan.js'
 import { createNavigation, queryView, readView, viewSearch } from '../.test-build/state/navigation.js'
 
@@ -13,6 +14,33 @@ function run(query, fallback, chosenGoal) {
   const result = evaluate(intent.expression, entries)
   return { intent, result, ids: result.matches.map(entry => entry.id), plan: planInterface(intent, result) }
 }
+
+test('matches full registered titles beyond five words before interpreting embedded operators', () => {
+  const titles = [
+    { id: 'example-one', title: 'Translating design feedback into smaller releases' },
+    { id: 'example-two', title: 'Maintaining and improving a long-running service' },
+  ]
+  const tokenize = createTokenizer(titles)
+  for (const { id, title } of titles) {
+    const predicate = { type: 'predicate', predicate: { field: 'id', value: id } }
+    assert.deepEqual(tokenize(title), { tokens: [predicate], unknown: [] })
+    assert.deepEqual(tokenize('Case study ' + title.toUpperCase() + ' AND Python?'), {
+      tokens: [
+        { type: 'presentation', presentation: 'case-study' },
+        predicate,
+        { type: 'and' },
+        { type: 'predicate', predicate: { field: 'technology', value: 'Python' } },
+      ],
+      unknown: [],
+    })
+  }
+})
+
+test('a bare entry title selects the layout for that entry from another view', () => {
+  const result = run('Separate matching from presentation', 'projects')
+  assert.equal(result.intent.goal, 'decisions')
+  assert.deepEqual(result.ids, ['intent-pipeline'])
+})
 
 test('parses an explicit conjunction into typed predicates', () => {
   const { intent, ids } = run('projects AND backend')
@@ -50,6 +78,33 @@ test('resolves aliases, punctuation, and the supported natural-language requests
     assert.deepEqual(run(query).ids, ids)
   }
   assert.equal(run('What have you built using Python?', 'experience').intent.goal, 'projects')
+})
+
+test('scientific engineering vocabulary resolves supported intent examples deterministically', () => {
+  const cases = [
+    ['Show performance optimization experience.', 'performance optimization'],
+    ['Which projects involved maintaining existing software?', 'system maintenance'],
+    ['Show experience with Scala.', 'Scala'],
+    ['How do you validate algorithm changes?', 'differential testing'],
+    ['Show examples of responding to user feedback.', 'requirements interpretation'],
+    ['What testing practices have you used?', 'regression testing'],
+    ['Which projects demonstrate debugging?', 'debugging'],
+    ['How do you preserve correctness when optimizing software?', 'scientific correctness'],
+    ['Show your CI/CD experience.', 'CI/CD'],
+  ]
+  for (const [query, value] of cases) {
+    const intent = parseIntent(query)
+    assert.equal(intent.status, 'resolved', `${query}: ${JSON.stringify(intent)}`)
+    const predicates = []
+    function collect(expression) {
+      if (expression.type === 'predicate') predicates.push(expression.predicate.value)
+      else if (expression.type === 'not') collect(expression.expression)
+      else if (expression.type === 'and' || expression.type === 'or') { collect(expression.left); collect(expression.right) }
+    }
+    collect(intent.expression)
+    assert.ok(predicates.includes(value), `${query}: expected criterion ${value}`)
+    assert.deepEqual(intent, parseIntent(query))
+  }
 })
 
 test('returns unsupported syntax and terms explicitly', () => {

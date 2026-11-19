@@ -1,6 +1,8 @@
+import { reviewEntries } from './review.js'
+
 export const categories = ['backend', 'frontend', 'infrastructure', 'data', 'architecture'] as const
-export const technologies = ['Python', 'TypeScript', 'React', 'PostgreSQL', 'Docker', 'Java'] as const
-export const capabilities = ['API design', 'validation', 'data pipelines', 'observability', 'accessibility'] as const
+export const technologies = ['Python', 'TypeScript', 'React', 'PostgreSQL', 'Docker', 'Java', 'Spring Boot', 'Scala', 'Play Framework', 'ScalaTest', 'Apache POI', 'GitLab CI/CD', 'Pydantic', 'SQLite', 'RDF', 'SPARQL'] as const
+export const capabilities = ['API design', 'validation', 'data pipelines', 'observability', 'accessibility', 'authentication', 'authorization', 'database engineering', 'CI/CD', 'scientific data', 'knowledge graphs', 'system maintenance', 'performance optimization', 'algorithm optimization', 'differential testing', 'regression testing', 'debugging', 'requirements interpretation', 'reliability engineering', 'bounded concurrency', 'scientific correctness', 'user feedback', 'AI engineering', 'language model integration', 'AI output validation', 'experimental design', 'evaluation-driven decisions', 'data modeling', 'persistence', 'API integration', 'AI-assisted development'] as const
 export const contexts = ['independent', 'professional', 'coursework'] as const
 export const kinds = ['project', 'experience', 'decision'] as const
 
@@ -9,6 +11,18 @@ export type Technology = typeof technologies[number]
 export type Capability = typeof capabilities[number]
 export type Context = typeof contexts[number]
 export type Kind = typeof kinds[number]
+
+export interface CaseStudy {
+  subtitle: string
+  status: string
+  sections: readonly {
+    heading: string
+    paragraphs: readonly string[]
+    comparisons?: readonly { label: string; conventional: string; prototype: string }[]
+    flow?: readonly string[]
+    flowCaption?: string
+  }[]
+}
 
 export interface Entry {
   id: string
@@ -21,11 +35,13 @@ export interface Entry {
   context?: Context
   date?: string
   related?: readonly string[]
-  evidence: { status: 'demonstration' } | { status: 'approved'; reference: string }
+  evidence: { status: 'demonstration' } | { status: 'approved' | 'draft'; reference: string }
   problem?: string
   decision?: string
   tradeoff?: string
   stages?: readonly string[]
+  outcome?: string
+  caseStudy?: CaseStudy
 }
 
 const demonstration = { status: 'demonstration' } as const
@@ -88,4 +104,5 @@ export const entries: readonly Entry[] = [
     tradeoff: 'A closed vocabulary and registry make the system inspectable. New terms and layouts require deliberate additions.',
     stages: ['Parse intent', 'Evaluate criteria', 'Plan layout', 'Render components'],
   },
+  ...reviewEntries,
 ]
