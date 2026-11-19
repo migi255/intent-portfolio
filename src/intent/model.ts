@@ -2,7 +2,7 @@ import type { Capability, Category, Context, Kind, Technology } from '../data/co
 
 export const goals = ['projects', 'experience', 'decisions'] as const
 export type Goal = typeof goals[number]
-export type Presentation = 'default' | 'comparison' | 'timeline' | 'skills' | 'case-study'
+export type Presentation = 'default' | 'grouped' | 'comparison' | 'timeline' | 'skills' | 'case-study'
 
 export type Predicate =
   | { field: 'kind'; value: Kind }
@@ -26,7 +26,7 @@ export type Intent =
 export const goalLabels: Record<Goal, string> = {
   projects: 'Explore Projects',
   experience: 'Evaluate Experience',
-  decisions: 'Understand Engineering Decisions',
+  decisions: 'Selected engineering decisions',
 }
 
 export const isGoal = (value: unknown): value is Goal => goals.some(goal => goal === value)

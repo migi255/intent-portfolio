@@ -4,7 +4,7 @@ import type { Goal, Predicate, Presentation } from './model.js'
 export type Word =
   | { type: 'predicate'; predicate: Predicate }
   | { type: 'goal'; goal: Goal }
-  | { type: 'presentation'; presentation: Presentation }
+  | { type: 'presentation'; presentation: Exclude<Presentation, 'default' | 'grouped'> }
   | { type: 'and' | 'or' | 'not' | '(' | ')' | 'skip' }
 
 const vocabulary = new Map<string, Word>()
@@ -21,7 +21,7 @@ for (const value of contexts) define({ type: 'predicate', predicate: { field: 'c
 define({ type: 'predicate', predicate: { field: 'kind', value: 'project' } }, 'projects', 'work samples')
 define({ type: 'predicate', predicate: { field: 'kind', value: 'experience' } }, 'experiences', 'work experience')
 define({ type: 'predicate', predicate: { field: 'category', value: 'frontend' } }, 'front end', 'ui', 'frontend engineering', 'front end engineering')
-define({ type: 'predicate', predicate: { field: 'category', value: 'backend' } }, 'back end', 'server side', 'backend engineering', 'back end engineering')
+define({ type: 'predicate', predicate: { field: 'category', value: 'backend' } }, 'back end', 'server side', 'backend systems', 'backend engineering', 'back end engineering')
 define({ type: 'predicate', predicate: { field: 'category', value: 'infrastructure' } }, 'infra', 'devops')
 define({ type: 'predicate', predicate: { field: 'category', value: 'data' } }, 'data engineering')
 define({ type: 'predicate', predicate: { field: 'category', value: 'architecture' } }, 'architecture')
@@ -44,14 +44,16 @@ define({ type: 'predicate', predicate: { field: 'capability', value: 'bounded co
 define({ type: 'predicate', predicate: { field: 'capability', value: 'system maintenance' } }, 'maintaining existing software', 'existing codebase maintenance', 'maintenance')
 define({ type: 'predicate', predicate: { field: 'category', value: 'architecture' } }, 'with system architecture')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'language model integration' } }, 'integrated language models', 'llm integration', 'language models')
-define({ type: 'predicate', predicate: { field: 'capability', value: 'AI output validation' } }, 'validate ai generated output', 'typed contracts')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'AI output validation' } }, 'validate ai generated output', 'typed contracts', 'deterministic boundaries')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'AI engineering' } }, 'ai systems')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'controlled access' } }, 'access control')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'validation' } }, 'testing')
-define({ type: 'predicate', predicate: { field: 'capability', value: 'evaluation-driven decisions' } }, 'driven by failed tests', 'negative controls')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'evaluation-driven decisions' } }, 'driven by failed tests', 'negative controls', 'where testing changed the design')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'API integration' } }, 'external integrations', 'apis and external integrations')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'AI-assisted development' } }, 'ai assisted development workflows')
 define({ type: 'goal', goal: 'projects' }, 'explore projects', 'what have you built')
 define({ type: 'goal', goal: 'experience' }, 'evaluate experience', 'what experience do you have')
-define({ type: 'goal', goal: 'decisions' }, 'system architecture', 'engineering approach', 'engineering decisions', 'architecture decisions', 'engineering decisions and tradeoffs')
+define({ type: 'goal', goal: 'decisions' }, 'system architecture', 'engineering approach', 'engineering decisions', 'selected engineering decisions', 'architecture decisions', 'engineering decisions and tradeoffs')
 define({ type: 'presentation', presentation: 'comparison' }, 'compare', 'comparison')
 define({ type: 'presentation', presentation: 'timeline' }, 'timeline', 'career timeline')
 define({ type: 'presentation', presentation: 'skills' }, 'skills', 'technical skills', 'skill summary')

@@ -1,4 +1,4 @@
-# Intent Portfolio
+# Miguel Mazumder | Software Engineer
 
 A browser-first engineering portfolio demonstrating how a controlled language query can change both the records shown and the way they are presented. The public catalog includes five engineering projects with case studies and experience records.
 
@@ -13,10 +13,9 @@ npm run dev
 
 ## Try the workflows
 
-- **Explore Projects** shows expandable project cards. Try `projects involving APIs but not coursework`.
-- **Evaluate Experience** shows a technology summary, capability comparison, and timeline. Try `what experience do you have with infrastructure?`.
-- **Understand Engineering Decisions** shows architecture sequences, rationale, and tradeoffs. Try `case study Dataset Catalog` for one case.
-- **Inspector** shows the input, resolved intent, expression, evaluation, plan, and component selection. Copy the URL to share the current view and validated filters.
+- Enter an intent such as `Where testing changed the design` to see matching projects, decisions, and experience together. The results show how the request was interpreted.
+- Use **Browse directly** for the project grid, experience comparison, or selected engineering decisions. Try `case study Ariadne` for a direct detail view.
+- **Why these results?** summarizes the filters and record types shown. Open **Structured criteria** to see the parsed expression. Shared links preserve validated criteria and the view. Search text stays in the browser session.
 
 ## Validate
 

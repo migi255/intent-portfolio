@@ -1,45 +1,34 @@
-import type { Ref } from 'react'
+import { describeCriteria } from '../intent/interpretation'
+import type { Entry, Kind } from '../data/content'
+import type { Expression } from '../intent/model'
 
-import type { Evaluation } from '../evaluation/evaluate'
-import { goalLabels, type Intent } from '../intent/model'
-import type { Plan } from '../planning/plan'
-import type { ViewState } from '../state/navigation'
+const labels: Record<Kind, readonly [string, string]> = {
+  project: ['project', 'projects'],
+  experience: ['experience record', 'experience records'],
+  decision: ['engineering decision', 'engineering decisions'],
+}
 
-export function Inspector({ view, intent, result, plan, heading, onClose }: {
-  view: ViewState
-  intent: Intent
-  result?: Evaluation
-  plan?: Plan
-  heading: Ref<HTMLHeadingElement>
-  onClose: () => void
+export function Inspector({ expression, entries, matches }: {
+  expression: Expression
+  entries: readonly Entry[]
+  matches: readonly Entry[]
 }) {
+  const counts = (Object.keys(labels) as Kind[]).flatMap(kind => {
+    const count = matches.filter(entry => entry.kind === kind).length
+    return count ? [count + ' ' + labels[kind][count === 1 ? 0 : 1]] : []
+  })
+
   return (
-    <aside className="inspector" id="inspector" aria-labelledby="inspector-title">
-      <div className="inspector-header">
-        <div className="inspector-title-row">
-          <h2 id="inspector-title" tabIndex={-1} ref={heading}>Interface Inspector</h2>
-          <button type="button" onClick={onClose}>Close inspector</button>
-        </div>
-        <p>Data from the current interaction, in processing order.</p>
+    <details className="inspector">
+      <summary>Why these results?</summary>
+      <div className="search-details">
+        <p>Catalog filters: <strong>{describeCriteria(expression, entries)}</strong></p>
+        <p>{counts.length ? 'Shown: ' + counts.join(' · ') : 'No records fit these filters in this view.'}</p>
+        <details className="structured-criteria">
+          <summary>Structured criteria</summary>
+          <pre>{JSON.stringify(expression, null, 2)}</pre>
+        </details>
       </div>
-      <dl>
-        <div><dt>Original input</dt><dd>{view.query || goalLabels[view.goal]}</dd></div>
-        <div><dt>Resolved intent</dt><dd>
-          {intent.status === 'resolved' ? goalLabels[intent.goal] + ' / ' + intent.presentation : intent.status}
-        </dd></div>
-        <div><dt>Symbolic expression</dt><dd>
-          {intent.status === 'resolved' ? <pre>{JSON.stringify(intent.expression, null, 2)}</pre> : intent.message}
-        </dd></div>
-        <div><dt>Evaluation</dt><dd>
-          {result ? <pre>{JSON.stringify({
-            evaluatedCount: result.evaluatedCount,
-            indeterminateCount: result.indeterminateCount,
-            matches: result.matches.map(({ id, title }) => ({ id, title })),
-          }, null, 2)}</pre> : 'Evaluation did not run.'}
-        </dd></div>
-        <div><dt>UI plan</dt><dd>{plan ? <pre>{JSON.stringify(plan, null, 2)}</pre> : 'No plan was generated.'}</dd></div>
-        <div><dt>Registered components</dt><dd>{plan?.blocks.map(block => block.kind).join(', ') || 'None'}</dd></div>
-      </dl>
-    </aside>
+    </details>
   )
 }

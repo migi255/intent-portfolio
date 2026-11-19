@@ -15,24 +15,24 @@ function matchesPredicate(entry: Entry, predicate: Predicate): Truth {
   }
 }
 
-function test(entry: Entry, expression: Expression): Truth {
+export function testExpression(entry: Entry, expression: Expression): Truth {
   switch (expression.type) {
     case 'all': return true
     case 'predicate': return matchesPredicate(entry, expression.predicate)
     case 'not': {
-      const result = test(entry, expression.expression)
+      const result = testExpression(entry, expression.expression)
       return result === undefined ? undefined : !result
     }
     case 'and': {
-      const left = test(entry, expression.left)
+      const left = testExpression(entry, expression.left)
       if (left === false) return false
-      const right = test(entry, expression.right)
+      const right = testExpression(entry, expression.right)
       return right === false ? false : left === true && right === true ? true : undefined
     }
     case 'or': {
-      const left = test(entry, expression.left)
+      const left = testExpression(entry, expression.left)
       if (left === true) return true
-      const right = test(entry, expression.right)
+      const right = testExpression(entry, expression.right)
       return right === true ? true : left === false && right === false ? false : undefined
     }
     default: return undefined
@@ -49,7 +49,7 @@ export function evaluate(expression: Expression, entries: readonly Entry[]): Eva
   const matches: Entry[] = []
   let indeterminateCount = 0
   for (const entry of entries) {
-    const result = test(entry, expression)
+    const result = testExpression(entry, expression)
     if (result === true) matches.push(entry)
     if (result === undefined) indeterminateCount += 1
   }

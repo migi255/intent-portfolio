@@ -1,28 +1,33 @@
 import type { ReactNode } from 'react'
 
 import type { CaseStudy, Entry } from '../data/content'
+import { explainMatch } from '../intent/interpretation'
+import type { Expression } from '../intent/model'
 import { validatePlan, type BlockKind } from '../planning/plan'
 
 type CaseStudyLink = (entry: Entry) => ReactNode
-type Registry = Record<BlockKind, (items: readonly Entry[], caseStudyLink: CaseStudyLink) => ReactNode>
+type Registry = Record<BlockKind, (items: readonly Entry[], options: {
+  caseStudyLink: CaseStudyLink
+  criteria?: Expression
+}) => ReactNode>
+
+const groupLabels: Partial<Record<BlockKind, string>> = {
+  cards: 'Projects',
+  decisions: 'Selected engineering decisions',
+  'experience-records': 'Experience',
+}
 
 const registry: Registry = {
-  cards: (items, caseStudyLink) => (
-    <div className="card-grid">
+  cards: (items, { caseStudyLink, criteria }) => (
+    <ProjectCards items={items} caseStudyLink={caseStudyLink} criteria={criteria} />
+  ),
+  'experience-records': (items, { criteria }) => (
+    <div className="experience-records">
       {items.map(entry => (
-        <article className="card" data-category={entry.categories[0]} key={entry.id}>
-          <CategoryList entry={entry} />
-          <h3>{entry.title}</h3>
+        <article className="experience-record" key={entry.id}>
+          <h4>{entry.title}</h4>
           <p>{entry.summary}</p>
-          <TagList values={entry.technologies} />
-          {entry.caseStudy && caseStudyLink(entry)}
-          {entry.decision && !entry.caseStudy && (
-            <details>
-              <summary>Project details</summary>
-              <p>{entry.problem}</p>
-              <p>{entry.decision}</p>
-            </details>
-          )}
+          <MatchNote entry={entry} criteria={criteria} />
         </article>
       ))}
     </div>
@@ -62,11 +67,14 @@ const registry: Registry = {
       </ol>
     </div>
   ),
-  decisions: (items, caseStudyLink) => (
+  decisions: (items, { caseStudyLink, criteria }) => (
     <div className="decision-list">
       {items.map(entry => (
         <details key={entry.id} className="decision">
-          <summary><span>{entry.title}</span></summary>
+          <summary>
+            <span>{entry.title}</span>
+            <MatchNote entry={entry} criteria={criteria} />
+          </summary>
           <DecisionDetail entry={entry} />
           {entry.caseStudy && caseStudyLink(entry)}
         </details>
@@ -85,6 +93,41 @@ const registry: Registry = {
   ),
 }
 
+function ProjectCards({ items, caseStudyLink, criteria }: {
+  items: readonly Entry[]
+  caseStudyLink: CaseStudyLink
+  criteria?: Expression
+}) {
+  const Heading = criteria ? 'h4' : 'h3'
+  return (
+    <div className="card-grid">
+      {items.map(entry => (
+        <article className="card" data-category={entry.categories[0]} key={entry.id}>
+          {!criteria && <CategoryList entry={entry} />}
+          <Heading>{entry.title}</Heading>
+          <p>{entry.summary}</p>
+          {criteria ? <MatchNote entry={entry} criteria={criteria} /> : <TagList values={entry.technologies} />}
+          {entry.caseStudy && caseStudyLink(entry)}
+          {entry.decision && !entry.caseStudy && (
+            <details>
+              <summary>Project details</summary>
+              <p>{entry.problem}</p>
+              <p>{entry.decision}</p>
+            </details>
+          )}
+        </article>
+      ))}
+    </div>
+  )
+}
+
+function MatchNote({ entry, criteria }: { entry: Entry; criteria?: Expression }) {
+  if (!criteria) return null
+  const reasons = explainMatch(entry, criteria)
+  if (!reasons.length) return null
+  return <small className="match-note"><strong>Matches</strong> {reasons.join(' · ')}</small>
+}
+
 function CategoryList({ entry }: { entry: Entry }) {
   if (!entry.categories.length) return null
   return (
@@ -100,16 +143,11 @@ function TagList({ values }: { values?: readonly string[] }) {
 }
 
 function DecisionDetail({ entry }: { entry: Entry }) {
+  // The local review overlay can still contain older structured decision records.
+  const paragraphs = entry.decisionParagraphs ?? [entry.summary, entry.problem, entry.decision, entry.tradeoff, entry.outcome]
   return (
     <div className="decision-detail">
-      <p>{entry.summary}</p>
-      <CategoryList entry={entry} />
-      <dl>
-        {entry.problem && <div><dt>Problem</dt><dd>{entry.problem}</dd></div>}
-        {entry.decision && <div><dt>Decision</dt><dd>{entry.decision}</dd></div>}
-        {entry.tradeoff && <div><dt>Tradeoff</dt><dd>{entry.tradeoff}</dd></div>}
-        {entry.outcome && <div><dt>Outcome</dt><dd>{entry.outcome}</dd></div>}
-      </dl>
+      {paragraphs.map((paragraph, index) => paragraph && <p key={index}>{paragraph}</p>)}
       {entry.stages?.length && (
         <ol className="stages" aria-label="Architecture sequence">
           {entry.stages.map(stage => <li key={stage}>{stage}</li>)}
@@ -151,17 +189,28 @@ function CaseStudyNarrative({ study }: { study: CaseStudy }) {
   )
 }
 
-export function Renderer({ plan, entries, caseStudyLink }: { plan: unknown; entries: readonly Entry[]; caseStudyLink: CaseStudyLink }) {
+export function Renderer({ plan, entries, caseStudyLink, criteria }: {
+  plan: unknown
+  entries: readonly Entry[]
+  caseStudyLink: CaseStudyLink
+  criteria?: Expression
+}) {
   if (!validatePlan(plan, entries)) return <p role="alert">This layout could not be loaded. Choose another view.</p>
-  if (!plan.blocks.length) return <p className="notice">There are no details for this layout. Try another view.</p>
+  if (!plan.blocks.length) return <p className="notice">No records fit this view.</p>
 
   const byId = new Map(entries.map(entry => [entry.id, entry]))
-  return plan.blocks.map(block => (
-    <div className="render-block" key={block.kind}>
-      {registry[block.kind](block.entryIds.flatMap(id => {
-        const entry = byId.get(id)
-        return entry ? [entry] : []
-      }), caseStudyLink)}
-    </div>
-  ))
+  return plan.blocks.map(block => {
+    const items = block.entryIds.flatMap(id => {
+      const entry = byId.get(id)
+      return entry ? [entry] : []
+    })
+    const content = registry[block.kind](items, { caseStudyLink, criteria })
+    const heading = criteria && groupLabels[block.kind]
+    return heading
+      ? <section className="evidence-group render-block" key={block.kind} aria-labelledby={'group-' + block.kind}>
+        <h3 id={'group-' + block.kind}>{heading}</h3>
+        {content}
+      </section>
+      : <div className="render-block" key={block.kind}>{content}</div>
+  })
 }

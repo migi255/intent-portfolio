@@ -37,9 +37,9 @@ test('matches full registered titles beyond five words before interpreting embed
 })
 
 test('a bare entry title selects the layout for that entry from another view', () => {
-  const result = run('Separate matching from presentation', 'projects')
+  const result = run('Model output stops at structured intent', 'projects')
   assert.equal(result.intent.goal, 'decisions')
-  assert.deepEqual(result.ids, ['intent-pipeline'])
+  assert.deepEqual(result.ids, ['ariadne-execution-boundary'])
 })
 
 test('parses an explicit conjunction into typed predicates', () => {
@@ -54,18 +54,18 @@ test('parses an explicit conjunction into typed predicates', () => {
 
 test('AND binds more tightly than OR and NOT binds to its operand', () => {
   assert.deepEqual(run('mass spectrometry OR Python AND NOT professional').ids, ['mass-spectrometry-analysis', 'ariadne', 'synkrita', 'geas'])
-  assert.deepEqual(run('NOT NOT Python').ids, ['ariadne', 'synkrita', 'geas'])
+  assert.deepEqual(run('NOT NOT Python').ids, ['tohsa', 'ariadne', 'synkrita', 'geas'])
 })
 
 test('evaluates nested groups and respects explicit precedence changes', () => {
   assert.deepEqual(run('(mass spectrometry OR (backend AND Python)) AND NOT (Docker OR professional)').ids, ['ariadne', 'synkrita'])
-  assert.deepEqual(run('(mass spectrometry OR Python) AND NOT independent').ids, ['mass-spectrometry-analysis'])
+  assert.deepEqual(run('(mass spectrometry OR Python) AND NOT independent').ids, ['mass-spectrometry-analysis', 'tohsa'])
 })
 
 test('resolves aliases, punctuation, and supported natural-language requests', () => {
   const cases = [
     ['Show me your backend projects.', 'projects', ['tohsa', 'ariadne', 'synkrita']],
-    ['What have you built using Python?', 'projects', ['ariadne', 'synkrita', 'geas']],
+    ['What have you built using Python?', 'projects', ['tohsa', 'ariadne', 'synkrita', 'geas']],
     ['Show projects involving APIs but not coursework.', 'projects', []],
     ['What experience do you have with data integration?', 'experience', ['tohsa-engineering']],
     ['Show me your most relevant projects for front-end engineering.', 'projects', ['tohsa']],
@@ -85,10 +85,8 @@ test('the production catalog exposes the flagship cards, search, and canonical c
   assert.equal(new Set(entries.map(entry => entry.id)).size, entries.length)
   const ids = ['mass-spectrometry-analysis', 'tohsa', 'ariadne', 'synkrita', 'geas']
   assert.deepEqual(run('').ids, ids)
-  const decisions = run('', 'decisions').plan.blocks.flatMap(block => block.entryIds)
   for (const id of ids) {
     const project = entries.find(entry => entry.id === id)
-    assert.ok(decisions.includes(id))
     assert.deepEqual(run(project.title).ids, [id])
     const link = readView(viewSearch(caseStudyView(id)))
     const result = evaluate(link.intent.expression, entries)
@@ -98,30 +96,55 @@ test('the production catalog exposes the flagship cards, search, and canonical c
   }
 })
 
-test('collaborative project searches expose only the public titles and approved capabilities', () => {
+test('the selected decisions view lists only the curated decisions', () => {
+  const expected = [
+    'ariadne-execution-boundary', 'ariadne-ambiguity', 'ariadne-evidence-reuse',
+    'synkrita-connector-baseline', 'geas-story-authority', 'geas-narrative-stability',
+  ]
+  const { plan } = run('Selected engineering decisions')
+  assert.deepEqual(plan.blocks, [{ kind: 'decisions', entryIds: expected }])
+  for (const id of expected) {
+    const entry = entries.find(record => record.id === id)
+    assert.equal(entry.kind, 'decision')
+    assert.ok(entry.decisionParagraphs.length >= 1 && entry.decisionParagraphs.length <= 2)
+    assert.deepEqual(run(entry.title).plan.blocks, [{ kind: 'decisions', entryIds: [id] }])
+    const link = readView(viewSearch(caseStudyView(id)))
+    assert.deepEqual(planInterface(link.intent, evaluate(link.intent.expression, entries)).blocks,
+      [{ kind: 'case-study', entryIds: [id] }])
+  }
+})
+
+test('the portfolio architecture note remains reachable as a case study', () => {
+  const view = readView(viewSearch(caseStudyView('intent-pipeline')))
+  assert.deepEqual(planInterface(view.intent, evaluate(view.intent.expression, entries)).blocks,
+    [{ kind: 'case-study', entryIds: ['intent-pipeline'] }])
+})
+
+test('collaborative project searches expose only the approved technologies and capabilities', () => {
   const cases = [
     ['mass-spectrometry-analysis', 'Mass spectrometry analysis software', [
       'scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization',
       'validation', 'scientific correctness', 'requirements interpretation',
-    ]],
+    ], ['Scala', 'HTML', 'JavaScript', 'CSS', 'HOCON']],
     ['tohsa', 'TOHSA', [
       'backend development', 'portal integration', 'data integration', 'validation',
       'controlled access', 'semantic data',
-    ]],
+    ], ['JavaScript', 'TypeScript', 'Java', 'Spring Boot', 'Apache Jena', 'Python', 'Shell']],
   ]
-  for (const [id, title, capabilities] of cases) {
+  for (const [id, title, capabilities, technologies] of cases) {
     const experienceId = id + '-engineering'
     const project = entries.find(entry => entry.id === id)
     const experience = entries.find(entry => entry.id === experienceId)
     assert.deepEqual(project.related, [experienceId])
     for (const entry of [project, experience]) {
-      assert.equal(entry.technologies, undefined)
+      assert.deepEqual(entry.technologies, technologies)
       assert.deepEqual(entry.capabilities, capabilities)
       assert.deepEqual(run(entry.title).ids, [entry.id])
     }
     assert.equal(experience.summary, project.summary)
     assert.deepEqual(run('Case study ' + title).ids, [id])
     assert.ok(capabilities.every(capability => run(capability).ids.includes(id)))
+    assert.ok(technologies.every(technology => run(technology).ids.includes(id)))
   }
   for (const alias of ['performance', 'performance engineering']) {
     assert.ok(run(alias).ids.includes('mass-spectrometry-analysis'))
@@ -130,7 +153,7 @@ test('collaborative project searches expose only the public titles and approved 
     assert.equal(parseIntent(removed).status, 'unsupported')
     assert.deepEqual(readView('?' + new URLSearchParams({ filter: 'capability:' + removed })), queryView('projects'))
   }
-  assert.deepEqual(run('mass spectrometry AND Scala').ids, [])
+  assert.deepEqual(run('mass spectrometry AND Scala').ids, ['mass-spectrometry-analysis'])
   assert.deepEqual(run('TOHSA AND SPARQL').ids, [])
 })
 
@@ -244,7 +267,7 @@ test('shareable URLs encode validated filters without carrying query phrasing', 
   const restored = readView(search)
   assert.equal(restored.query, '')
   assert.deepEqual(restored.intent, view.intent)
-  assert.deepEqual(evaluate(restored.intent.expression, entries).matches.map(entry => entry.id), ['ariadne', 'synkrita'])
+  assert.deepEqual(evaluate(restored.intent.expression, entries).matches.map(entry => entry.id), ['tohsa', 'ariadne', 'synkrita'])
 })
 
 test('a fresh page restores the same case study and empty-result plans from canonical links', () => {

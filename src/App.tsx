@@ -4,18 +4,18 @@ import { Inspector } from './components/Inspector'
 import { ThemeControl } from './components/ThemeControl'
 import { entries } from './data/content'
 import { evaluate } from './evaluation/evaluate'
+import { describeCriteria, suggestBroaderIntents, suggestedIntents } from './intent/interpretation'
 import { goals, goalLabels, type Goal } from './intent/model'
 import { maxQueryLength } from './intent/vocabulary'
 import { planInterface } from './planning/plan'
 import { Renderer } from './renderer/Renderer'
-import { caseStudyView, queryView, viewSearch, type createNavigation, type ViewState } from './state/navigation'
+import { caseStudyView, evidenceView, queryView, viewSearch, type createNavigation, type ViewState } from './state/navigation'
 
-const examples = ['Backend projects', 'Projects using Python', 'APIs but not coursework', 'System architecture']
-const navLabels: Record<Goal, string> = { projects: 'Projects', experience: 'Experience', decisions: 'Engineering decisions' }
+const navLabels: Record<Goal, string> = { projects: 'Projects', experience: 'Experience', decisions: 'Selected engineering decisions' }
 const descriptions: Record<Goal, string> = {
   projects: 'Explore work by technology, engineering problem, or technical discipline.',
-  experience: 'Compare technologies and capabilities, then see how the work fits together over time.',
-  decisions: 'Read the constraints, rationale, and tradeoffs behind the work.',
+  experience: 'Compare the technologies used and the work they supported.',
+  decisions: 'Choices that shaped what these systems do and where they stop.',
 }
 
 export function App({ navigation, initialView }: {
@@ -24,12 +24,10 @@ export function App({ navigation, initialView }: {
 }) {
   const [view, setView] = useState(initialView)
   const [draft, setDraft] = useState(view.query)
-  const [inspect, setInspect] = useState(false)
   const [transition, setTransition] = useState(0)
+  const resultsRegion = useRef<HTMLElement>(null)
   const resultsHeading = useRef<HTMLHeadingElement>(null)
   const search = useRef<HTMLInputElement>(null)
-  const inspectorToggle = useRef<HTMLButtonElement>(null)
-  const inspectorHeading = useRef<HTMLHeadingElement>(null)
 
   useEffect(() => {
     function restore() {
@@ -45,28 +43,19 @@ export function App({ navigation, initialView }: {
   useEffect(() => {
     if (transition > 0) {
       resultsHeading.current?.focus({ preventScroll: true })
-      resultsHeading.current?.scrollIntoView({ block: 'start' })
+      resultsRegion.current?.scrollIntoView({ block: 'start' })
     }
   }, [transition])
 
   useEffect(() => {
-    if (window.location.hash === '#results') resultsHeading.current?.scrollIntoView({ block: 'start' })
+    if (window.location.hash === '#results') resultsRegion.current?.scrollIntoView({ block: 'start' })
   }, [])
 
-  useEffect(() => {
-    if (inspect) inspectorHeading.current?.focus()
-  }, [inspect])
-
-  function closeInspector() {
-    setInspect(false)
-    inspectorToggle.current?.focus()
-  }
-
-  function navigate(next: ViewState) {
+  function navigate(next: ViewState, focusResults = true) {
     navigation.navigate(next)
     setView(next)
     setDraft(next.query)
-    setTransition(previous => previous + 1)
+    if (focusResults) setTransition(previous => previous + 1)
   }
 
   function followView(event: MouseEvent<HTMLAnchorElement>, next: ViewState) {
@@ -77,86 +66,98 @@ export function App({ navigation, initialView }: {
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    navigate(queryView(activeGoal, draft.trim() ? draft : ''))
+    navigate(draft.trim() ? evidenceView(draft) : queryView('projects'))
   }
 
-  const { intent, result, plan } = useMemo(() => {
+  const { intent, matched, plan } = useMemo(() => {
     const { intent } = view
-    if (intent.status !== 'resolved') return { intent }
+    if (intent.status !== 'resolved') return { intent, matched: [] }
     const result = evaluate(intent.expression, entries)
-    return { intent, result, plan: planInterface(intent, result) }
+    const plan = planInterface(intent, result)
+    const visibleIds = new Set(plan.blocks.flatMap(block => block.entryIds))
+    return { intent, matched: result.matches.filter(entry => visibleIds.has(entry.id)), plan }
   }, [view])
   const activeGoal = intent.status === 'resolved' ? intent.goal : view.goal
-  const hasSharedFilters = !view.query && viewSearch(view) !== viewSearch(queryView(activeGoal))
+  const isCaseStudy = intent.status === 'resolved' && intent.presentation === 'case-study'
+  const grouped = intent.status === 'resolved' && intent.presentation === 'grouped'
+  const hasIntent = Boolean(view.query) || grouped ||
+    (!isCaseStudy && viewSearch(view) !== viewSearch(queryView(activeGoal)))
+  const interpretation = intent.status === 'resolved' && hasIntent ? describeCriteria(intent.expression, entries) : undefined
+  const broader = intent.status === 'resolved' && hasIntent && !matched.length
+    ? suggestBroaderIntents(intent, entries) : []
 
   return (
     <>
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="site-header">
         <div className="page-width header-inner">
-          <a className="wordmark" href="./"><span className="brand-mark" aria-hidden="true" />Intent Portfolio</a>
-          <nav aria-label="Portfolio">
-            {goals.map(goal => (
-              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => followView(event, queryView(goal))}
-                data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
-            ))}
-          </nav>
-          <div className="header-actions">
-            <ThemeControl />
-            <button className="inspect-toggle" ref={inspectorToggle} type="button" aria-pressed={inspect}
-              aria-controls={inspect ? 'inspector' : undefined} onClick={() => setInspect(enabled => !enabled)}>
-              Inspector
-            </button>
-          </div>
+          <a className="wordmark" href="./"><span className="brand-mark" aria-hidden="true" />Miguel Mazumder</a>
+          <ThemeControl />
         </div>
       </header>
 
       <main id="main" tabIndex={-1} className="page-width">
         <section className="hero" aria-labelledby="intro-heading">
           <div className="intro">
-            <p className="eyebrow">Software engineering portfolio</p>
-            <h1 id="intro-heading">Explore the work.<br /><em>Follow your intent.</em></h1>
-            <p className="intro-copy">A portfolio about building software for complex systems. Browse projects, compare experience, or look inside the decisions that shaped the work.</p>
+            <p className="eyebrow">Software Engineer</p>
+            <h1 id="intro-heading">Software for research, data, and simulation</h1>
+            <p className="intro-copy">I build scientific software and research data infrastructure, alongside experiments in AI and adaptive games.</p>
           </div>
-          <div className="search-panel">
-            <form onSubmit={submit}>
-              <label htmlFor="query">What would you like to find?</label>
+          <div className="intent-panel">
+            <form onSubmit={submit} role="search" aria-labelledby="intent-label">
+              <label htmlFor="query" id="intent-label">What are you looking for?</label>
               <div className="search-row">
                 <input id="query" ref={search} type="search" autoComplete="off" value={draft} maxLength={maxQueryLength}
-                  onChange={event => setDraft(event.target.value)} placeholder="Show me your backend projects"
+                  onChange={event => {
+                    const value = event.target.value
+                    if (value === '' && hasIntent) navigate(queryView('projects'), false)
+                    else setDraft(value)
+                  }} placeholder="e.g. backend systems involving access control"
                   aria-describedby="query-help" />
-                <button type="submit">Search</button>
+                <button type="submit">Find work</button>
               </div>
-              <p id="query-help">Search by skill, technology, or topic. Use AND, OR, and NOT to refine results.</p>
+              <p id="query-help">{hasIntent && draft !== view.query
+                ? 'The results below are for your last request. Select Find work to apply your edits.'
+                : 'Describe the work you want to see. Search uses the portfolio’s topics, technologies, and capabilities.'}</p>
             </form>
-            <ul className="examples" aria-label="Example searches">
-              {examples.map(query => (
-                <li key={query}><button type="button" onClick={() => navigate(queryView('projects', query))}>{query}</button></li>
+            <ul className="examples" aria-label="Suggested intents">
+              {suggestedIntents.map(({ label, query }) => (
+                <li key={query}>
+                  <button type="button" onClick={() => navigate(evidenceView(query))}>
+                    <span>{label}</span> {query}
+                  </button>
+                </li>
               ))}
             </ul>
           </div>
         </section>
 
-        <section className="explorer" data-goal={activeGoal} aria-labelledby="results">
-          <nav className="goal-links" aria-label="Choose a visitor goal">
-            {goals.map(goal => (
-              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => followView(event, queryView(goal))}
-                data-goal={goal} aria-current={activeGoal === goal ? 'page' : undefined}>{goalLabels[goal]}</a>
-            ))}
-          </nav>
+        <nav className="browse-nav" aria-label="Browse directly">
+          <span>Or browse directly</span>
+          {goals.map(goal => (
+            <a key={goal} href={navigation.href(queryView(goal))} onClick={event => followView(event, queryView(goal))}
+              data-goal={goal} aria-current={!hasIntent && activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
+          ))}
+        </nav>
+
+        <section className="explorer" data-goal={grouped ? undefined : activeGoal} aria-labelledby="results" ref={resultsRegion}>
+          {interpretation && intent.status === 'resolved' && (
+            <div className="interpretation">
+              <p className="interpretation-label">Interpreted as</p>
+              <p className="interpretation-criteria">{interpretation}</p>
+              <Inspector key={viewSearch(view)} expression={intent.expression} entries={entries} matches={matched} />
+            </div>
+          )}
+
           <div className="result-heading">
             <div>
-              <h2 id="results" tabIndex={-1}>{goalLabels[activeGoal]}</h2>
-              <p>{descriptions[activeGoal]}</p>
+              <h2 id="results" tabIndex={-1}>{isCaseStudy ? 'Case studies' : hasIntent ? 'Relevant work' : goalLabels[activeGoal]}</h2>
+              {!isCaseStudy && !hasIntent && <p>{descriptions[activeGoal]}</p>}
             </div>
-            {result?.matches.some(entry => entry.evidence.status === 'draft') && (
+            {matched.some(entry => entry.evidence.status === 'draft') && (
               <p className="demo-label">Includes draft content for review</p>
             )}
           </div>
-          {(view.query || hasSharedFilters) && <p className="committed-query">
-            {view.query ? <>Search <strong>{view.query}</strong></> : 'Shared filters'}
-            {result && <span> · {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}</span>}
-          </p>}
 
           {intent.status === 'unsupported' && (
             <div className="notice" role="status">
@@ -171,33 +172,40 @@ export function App({ navigation, initialView }: {
               <p>{intent.message}</p>
               <div className="choice-buttons">
                 {intent.goals.map(goal => <button key={goal} type="button"
-                  onClick={() => navigate(queryView(view.goal, view.query, goal))}>{goalLabels[goal]}</button>)}
+                  onClick={() => navigate(evidenceView(view.query, goal))}>{goalLabels[goal]}</button>)}
               </div>
             </div>
           )}
-          {result?.matches.length === 0 && (
-            <div className="notice" role="status">
-              <h3>No matching entries</h3>
-              <p>Try fewer criteria, a broader category, or a different technology.</p>
-              <button type="button" onClick={() => navigate(queryView(activeGoal))}>Clear search</button>
+          {intent.status === 'resolved' && hasIntent && !matched.length && (
+            <div className="empty-results" role="status">
+              <h3>No work matched all the criteria</h3>
+              <p>{view.query && draft === view.query ? 'Your request is still in the search field.' : 'Use the search field to revise the request.'}
+                {broader.length > 0 && ' You can remove a criterion below.'}</p>
+              <div className="choice-buttons">
+                {broader.map(({ removed, intent: next, count }) => <button key={removed} type="button"
+                  onClick={() => navigate({ goal: next.goal, intent: next, query: '' })}>
+                  Remove {removed} ({count} {count === 1 ? 'match' : 'matches'})
+                </button>)}
+                <button type="button" onClick={() => search.current?.focus()}>Edit request</button>
+                <button type="button" onClick={() => navigate(queryView('projects'))}>Clear request</button>
+              </div>
             </div>
           )}
-          {plan && result?.matches.length ? <Renderer plan={plan} entries={entries} caseStudyLink={entry => {
-            const next = caseStudyView(entry.id)
-            return <a className="case-study-link" href={navigation.href(next)} aria-label={`Read case study for ${entry.title}`}
-              onClick={event => followView(event, next)}>
-              Read case study
-            </a>
-          }} /> : null}
+          {plan && (matched.length > 0 || !hasIntent) && <Renderer plan={plan} entries={entries}
+            criteria={grouped && intent.status === 'resolved' ? intent.expression : undefined}
+            caseStudyLink={entry => {
+              const next = caseStudyView(entry.id)
+              return <a className="case-study-link" href={navigation.href(next)} aria-label={`Read case study for ${entry.title}`}
+                onClick={event => followView(event, next)}>
+                Read case study
+              </a>
+            }} />}
         </section>
-
-        {inspect && <Inspector view={view} intent={intent} result={result} plan={plan} heading={inspectorHeading} onClose={closeInspector} />}
       </main>
 
       <footer className="site-footer">
         <div className="page-width footer-inner">
-          <div><strong>Intent Portfolio</strong><p>A browser-based experiment in intent-driven interfaces.</p></div>
-          <div><strong>Resume and contact</strong><p>Public details are pending approval.</p></div>
+          <div><strong>Miguel Mazumder</strong><p>Software Engineer</p></div>
         </div>
       </footer>
     </>

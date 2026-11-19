@@ -2,7 +2,7 @@ import type { Entry } from '../data/content.js'
 import type { Evaluation } from '../evaluation/evaluate.js'
 import { isGoal, type Goal, type Intent } from '../intent/model.js'
 
-export const blockKinds = ['cards', 'comparison', 'timeline', 'skills', 'decisions', 'case-study'] as const
+export const blockKinds = ['cards', 'comparison', 'timeline', 'skills', 'decisions', 'case-study', 'experience-records'] as const
 export type BlockKind = typeof blockKinds[number]
 export interface Block {
   kind: BlockKind
@@ -17,22 +17,29 @@ export function planInterface(intent: Extract<Intent, { status: 'resolved' }>, r
   const { goal, presentation } = intent
   if (result.matches.length === 0) return { goal, blocks: [] }
   let kinds: readonly BlockKind[]
-  if (presentation !== 'default') kinds = [presentation]
+  if (presentation === 'grouped') kinds = ['cards', 'decisions', 'experience-records']
+  else if (presentation !== 'default') kinds = [presentation]
   else if (goal === 'experience') kinds = ['skills', 'comparison', 'timeline']
   else if (goal === 'decisions') kinds = ['decisions']
   else kinds = ['cards']
   return {
     goal,
     blocks: kinds.flatMap(kind => {
-      const ids = result.matches.filter(entry => supportsBlock(kind, entry)).map(entry => entry.id)
+      const ids = result.matches
+        .filter(entry => (presentation !== 'grouped' || kind !== 'cards' || entry.kind === 'project') &&
+          supportsBlock(kind, entry))
+        .map(entry => entry.id)
       return ids.length ? [{ kind, entryIds: ids }] : []
     }),
   }
 }
 
 function supportsBlock(kind: BlockKind, entry: Entry): boolean {
+  if (kind === 'experience-records') return entry.kind === 'experience'
   if (kind === 'timeline') return Boolean(entry.date)
-  if (kind === 'case-study' || kind === 'decisions') return Boolean(entry.caseStudy || entry.decision)
+  const hasDecision = Boolean(entry.decisionParagraphs?.length || entry.decision)
+  if (kind === 'decisions') return entry.kind === 'decision' && hasDecision && !entry.caseStudyOnly
+  if (kind === 'case-study') return Boolean(entry.caseStudy || hasDecision)
   return true
 }
 

@@ -9,7 +9,8 @@ const scopes: Record<Goal, Expression> = {
   decisions: { type: 'or', left: kind('project'), right: kind('decision') },
 }
 const goalForKind: Record<Kind, Goal> = { project: 'projects', experience: 'experience', decision: 'decisions' }
-const goalForPresentation: Record<Exclude<Presentation, 'default'>, Goal> = {
+const kindForGoal: Record<Goal, Kind> = { projects: 'project', experience: 'experience', decisions: 'decision' }
+const goalForPresentation: Record<Exclude<Presentation, 'default' | 'grouped'>, Goal> = {
   comparison: 'experience',
   timeline: 'experience',
   skills: 'experience',
@@ -17,27 +18,29 @@ const goalForPresentation: Record<Exclude<Presentation, 'default'>, Goal> = {
 }
 
 export function isPresentationForGoal(value: unknown, goal: Goal): value is Exclude<Presentation, 'default'> {
-  return Object.entries(goalForPresentation).some(([name, target]) => value === name && goal === target)
+  return value === 'grouped' || Object.entries(goalForPresentation).some(([name, target]) => value === name && goal === target)
 }
 
 export function resolveGoal(goal: Goal): Extract<Intent, { status: 'resolved' }> {
   return { status: 'resolved', goal, expression: scopes[goal], presentation: 'default' }
 }
 
-export function parseIntent(query: string, fallback: Goal = 'projects', chosenGoal?: Goal): Intent {
+export function parseIntent(
+  query: string, fallback: Goal = 'projects', chosenGoal?: Goal, mode: 'browse' | 'evidence' = 'browse',
+): Intent {
   if (query.length > maxQueryLength) return unsupported('Enter a shorter query.')
   if (!query.trim()) return resolveGoal(chosenGoal ?? fallback)
 
   const { tokens, unknown } = tokenize(query.trim())
   if (unknown.length) return unsupported('Some terms are outside the supported vocabulary.', unknown)
   const requested = new Set<Goal>()
-  const presentations = new Set<Presentation>()
+  const presentations = new Set<Exclude<Presentation, 'default' | 'grouped'>>()
   const terms: Word[] = []
   for (const token of tokens) {
     if (token.type === 'goal') requested.add(token.goal)
     else if (token.type === 'presentation') {
       presentations.add(token.presentation)
-      if (token.presentation !== 'default') requested.add(goalForPresentation[token.presentation])
+      requested.add(goalForPresentation[token.presentation])
     } else terms.push(token)
   }
 
@@ -46,7 +49,7 @@ export function parseIntent(query: string, fallback: Goal = 'projects', chosenGo
     if (!expression && requested.size === 0) return unsupported('Add a project, skill, technology, or category.')
     const inferred = expression ? positiveGoals(expression) : []
     const candidates = requested.size ? [...requested] : inferred
-    if (!chosenGoal && candidates.length > 1) {
+    if (!chosenGoal && candidates.length > 1 && (mode === 'browse' || requested.size > 1)) {
       return { status: 'ambiguous', message: 'This query points to more than one layout. Choose how to view the matches.', goals: candidates }
     }
     if (presentations.size > 1) return unsupported('Request one layout at a time, such as comparison or timeline.')
@@ -54,8 +57,17 @@ export function parseIntent(query: string, fallback: Goal = 'projects', chosenGo
       ? entries.find(entry => entry.id === expression.predicate.value)?.kind
       : undefined
     const goal = chosenGoal ?? candidates[0] ?? (namedKind ? goalForKind[namedKind] : fallback)
-    const requestedPresentation = [...presentations][0] ?? 'default'
-    const presentation = requestedPresentation !== 'default' && goalForPresentation[requestedPresentation] === goal
+    const requestedPresentation = [...presentations][0]
+    if (mode === 'evidence' && !requestedPresentation) {
+      const explicitGoal = chosenGoal ?? [...requested][0]
+      const constraint = explicitGoal ? kind(kindForGoal[explicitGoal]) : undefined
+      const filters: Expression = expression && constraint
+        ? { type: 'and', left: constraint, right: expression }
+        : expression ?? constraint ?? { type: 'all' }
+      return { status: 'resolved', goal, expression: filters, presentation: 'grouped' }
+    }
+
+    const presentation = requestedPresentation && goalForPresentation[requestedPresentation] === goal
       ? requestedPresentation : 'default'
     const scope = expression && inferred.length === 0
       ? { type: 'and' as const, left: scopes[goal], right: expression }

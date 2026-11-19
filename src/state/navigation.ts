@@ -13,6 +13,10 @@ export function queryView(goal: Goal, query = '', chosenGoal?: Goal): ViewState 
   return { goal, query, intent: parseIntent(query, goal, chosenGoal) }
 }
 
+export function evidenceView(query: string, chosenGoal?: Goal): ViewState {
+  return { goal: 'projects', query, intent: parseIntent(query, 'projects', chosenGoal, 'evidence') }
+}
+
 export function caseStudyView(entryId: string): ViewState {
   return {
     goal: 'decisions',
