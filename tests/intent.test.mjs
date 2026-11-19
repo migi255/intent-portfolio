@@ -98,11 +98,28 @@ test('the production catalog exposes the flagship cards, search, and canonical c
 
 test('the selected decisions view lists only the curated decisions', () => {
   const expected = [
-    'ariadne-execution-boundary', 'ariadne-ambiguity', 'ariadne-evidence-reuse',
+    'mass-spectrometry-analysis-performance', 'ariadne-execution-boundary', 'ariadne-ambiguity',
     'synkrita-connector-baseline', 'geas-story-authority', 'geas-narrative-stability',
   ]
   const { plan } = run('Selected engineering decisions')
   assert.deepEqual(plan.blocks, [{ kind: 'decisions', entryIds: expected }])
+  assert.deepEqual(expected.map(id => entries.find(entry => entry.id === id).title), [
+    'Speed changes had to leave results unchanged',
+    'Model output stops at structured intent',
+    'Unresolved is a valid result',
+    'The connector baseline narrowed Synkrita’s role',
+    'Narration starts from committed state',
+    'Narrative stability comes before player adaptation',
+  ])
+  const performance = entries.find(entry => entry.id === expected[0])
+  const analysis = entries.find(entry => entry.id === 'mass-spectrometry-analysis')
+  assert.deepEqual(analysis.caseStudy.sections.find(section => section.heading === performance.title).paragraphs,
+    performance.decisionParagraphs)
+  assert.deepEqual(performance.capabilities, ['performance optimization', 'validation', 'scientific correctness'])
+  const incomplete = 'An incomplete answer that looks complete'
+  assert.ok(entries.find(entry => entry.id === 'ariadne').caseStudy.sections.some(section => section.heading === incomplete))
+  assert.ok(entries.every(entry => entry.title !== incomplete && entry.id !== 'ariadne-evidence-reuse'))
+
   for (const id of expected) {
     const entry = entries.find(record => record.id === id)
     assert.equal(entry.kind, 'decision')
@@ -135,13 +152,13 @@ test('collaborative project searches expose only the approved technologies and c
     const experienceId = id + '-engineering'
     const project = entries.find(entry => entry.id === id)
     const experience = entries.find(entry => entry.id === experienceId)
-    assert.deepEqual(project.related, [experienceId])
+    assert.deepEqual(project.related, id === 'mass-spectrometry-analysis'
+      ? [experienceId, 'mass-spectrometry-analysis-performance'] : [experienceId])
     for (const entry of [project, experience]) {
       assert.deepEqual(entry.technologies, technologies)
       assert.deepEqual(entry.capabilities, capabilities)
       assert.deepEqual(run(entry.title).ids, [entry.id])
     }
-    assert.equal(experience.summary, project.summary)
     assert.deepEqual(run('Case study ' + title).ids, [id])
     assert.ok(capabilities.every(capability => run(capability).ids.includes(id)))
     assert.ok(technologies.every(technology => run(technology).ids.includes(id)))

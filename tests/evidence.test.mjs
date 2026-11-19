@@ -46,7 +46,7 @@ test('interpretation reflects the parsed criteria, alternatives, and exclusions'
     right: { type: 'not', expression: { type: 'predicate', predicate: { field: 'context', value: 'coursework' } } },
   })
   assert.equal(describeCriteria(view.intent.expression, entries), 'Professional work and not Coursework')
-  assert.deepEqual(ids, ['mass-spectrometry-analysis', 'tohsa', 'mass-spectrometry-analysis-engineering', 'tohsa-engineering'])
+  assert.deepEqual(ids, ['mass-spectrometry-analysis', 'tohsa', 'mass-spectrometry-analysis-performance', 'mass-spectrometry-analysis-engineering', 'tohsa-engineering'])
   assert.deepEqual(explainMatch(result.matches[0], view.intent.expression), ['Professional work', 'not Coursework'])
   assert.equal(evaluate(view.intent.expression, [{ ...result.matches[0], context: 'coursework' }]).matches.length, 0)
 
@@ -64,7 +64,7 @@ test('the example phrases only match catalog evidence for their actual interpret
   assert.deepEqual(access.ids, ['tohsa', 'tohsa-engineering'])
   assert.deepEqual(run('AI systems with deterministic boundaries').ids,
     ['ariadne', 'ariadne-execution-boundary', 'ariadne-experience'])
-  assert.ok(run('work involving knowledge graphs').ids.includes('ariadne-evidence-reuse'))
+  assert.ok(run('work involving knowledge graphs').ids.includes('ariadne'))
   assert.ok(run('scientific software').ids.includes('mass-spectrometry-analysis'))
 })
 
@@ -105,7 +105,7 @@ test('zero results keep the original query and offer only actual one-criterion r
   assert.equal(empty.view.query, raw)
   assert.deepEqual(empty.ids, [])
   const options = suggestBroaderIntents(empty.view.intent, entries)
-  assert.deepEqual(options.map(({ removed, count }) => [removed, count]), [['Scala', 2], ['Java', 2]])
+  assert.deepEqual(options.map(({ removed, count }) => [removed, count]), [['Scala', 2], ['Java', 3]])
   for (const { intent, count } of options) {
     const plan = planInterface(intent, evaluate(intent.expression, entries))
     assert.equal(plan.blocks.flatMap(block => block.entryIds).length, count)
@@ -118,7 +118,7 @@ test('only approved public IDs and titles participate in grouped search and URL 
   // A closed catalog invariant keeps private titles and IDs out of tracked test fixtures.
   const approved = [
     'mass-spectrometry-analysis', 'mass-spectrometry-analysis-engineering', 'tohsa', 'tohsa-engineering',
-    'ariadne', 'ariadne-experience', 'ariadne-execution-boundary', 'ariadne-ambiguity', 'ariadne-evidence-reuse',
+    'ariadne', 'ariadne-experience', 'ariadne-execution-boundary', 'ariadne-ambiguity', 'mass-spectrometry-analysis-performance',
     'synkrita', 'synkrita-engineering', 'synkrita-connector-baseline',
     'geas', 'geas-engineering', 'geas-story-authority', 'geas-narrative-stability', 'intent-pipeline',
   ]

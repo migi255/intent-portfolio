@@ -51,23 +51,14 @@ const ariadneFocus: readonly Focus[] = [
     id: 'ariadne-execution-boundary', title: 'Model output stops at structured intent',
     capabilities: ['AI engineering', 'AI output validation', 'validation', 'API integration'],
     paragraphs: [
-      'Ariadne lets the model interpret an investigation and propose a structured request. The runtime determines what’s in scope and builds the executable graph query deterministically. Requests outside scope stop before any query is sent.',
+      'Ariadne lets the model interpret an investigation and propose a structured request. The software checks its scope and builds the graph query. Letting the model write queries directly would support more operations. Ariadne limits execution to operations its compiler can express.',
     ],
   },
   {
     id: 'ariadne-ambiguity', title: 'Unresolved is a valid result',
     capabilities: ['experimental design', 'evaluation-driven decisions', 'validation'],
     paragraphs: [
-      'Early exploration could pick the wrong relationship when several candidates looked plausible. Ariadne can now leave the relationship unresolved when the evidence can’t distinguish them.',
-      'In synthetic tests with independently established answers, the revised system left cases unresolved where it had previously picked the wrong relationship.',
-    ],
-  },
-  {
-    id: 'ariadne-evidence-reuse', title: 'Stored findings are not permanently valid',
-    capabilities: ['data modeling', 'persistence', 'knowledge graphs'],
-    paragraphs: [
-      'Ariadne records where each finding came from and what it applies to. Before reuse, it checks that the finding still fits the request, is recent enough, and hasn’t been revoked.',
-      'In a controlled synthetic comparison, this approach took fewer steps to discover relationships than starting without stored findings, with the same accuracy.',
+      'Early synthetic tests exposed a problem: Ariadne could select the wrong relationship when several looked plausible. The revised system leaves those cases unresolved. In the ambiguity control, the original version answered all 10 cases incorrectly. The revised version abstained in all 10. The new rules required more exploration.',
     ],
   },
 ]
@@ -94,14 +85,21 @@ const geasStability: Focus = {
   id: 'geas-narrative-stability', title: 'Narrative stability comes before player adaptation',
   capabilities: ['experimental design', 'validation'],
   paragraphs: [
-    'The long-term idea is to adapt situations to how someone plays. GEAS is tackling a prerequisite first: changing a scene while carrying forward the rules and consequences the story has already established.',
-    'Small trials with a local model tested how it interpreted actions. A separate writing trial passed structural checks on the prepared scene context and stopped before generating prose. Whether the story stays coherent over time and whether player adaptation works remain open questions.',
+    'The aim is to adapt situations to how someone plays. GEAS first tests whether a scene can change while preserving the rules and consequences already established. Small trials tested how a local model interpreted actions. A separate trial checked the structure of the scene context and stopped before generating prose. Long-term coherence and player adaptation remain untested.',
   ],
 }
 
 const collaborativeProjectNote = 'Implementation details are intentionally limited for this collaborative project.'
-const analysisSummary = 'Maintained and improved established mass spectrometry analysis software used in glycoscience research, with work spanning performance, validation, and researcher-facing improvements.'
-const tohsaSummary = 'Contributed to a development-stage glycoscience data platform, working across data integration, backend and portal functionality, validation, and controlled access to research data.'
+const analysisSummary = 'Maintained and improved established mass spectrometry analysis software used in glycoscience research. My work covered performance, validation, and researcher-facing changes.'
+const tohsaSummary = 'Contributed to a development-stage glycoscience data platform. My work covered data integration, backend and portal development, validation, and controlled access to research data.'
+
+const analysisPerformance: Focus = {
+  id: 'mass-spectrometry-analysis-performance', title: 'Speed changes had to leave results unchanged',
+  capabilities: ['performance optimization', 'validation', 'scientific correctness'],
+  paragraphs: [
+    'I strengthened validation before making performance changes. I kept changes intended to alter scientific results separate from the performance work. This let me check that the faster software still produced the established results.',
+  ],
+}
 
 export const publicProjects: readonly Entry[] = [
   ...flagship({
@@ -110,14 +108,13 @@ export const publicProjects: readonly Entry[] = [
     categories: ['data'],
     technologies: ['Scala', 'HTML', 'JavaScript', 'CSS', 'HOCON'],
     capabilities: ['scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization', 'validation', 'scientific correctness', 'requirements interpretation'],
-    experience: analysisSummary,
+    experience: 'Translated researcher requirements into application changes. Improved performance while preserving established scientific results.',
+    focuses: [analysisPerformance],
     caseStudy: {
       subtitle: 'Performance and researcher requirements',
       status: collaborativeProjectNote,
       sections: [
-        { heading: 'Performance', paragraphs: [
-          'Improved computational performance while preserving expected scientific behavior.',
-        ] },
+        decisionSection(analysisPerformance),
         { heading: 'Researcher requirements', paragraphs: [
           'Translated researcher requirements into application improvements and validated the changes.',
         ] },
@@ -130,7 +127,7 @@ export const publicProjects: readonly Entry[] = [
     categories: ['backend', 'data', 'frontend'],
     technologies: ['JavaScript', 'TypeScript', 'Java', 'Spring Boot', 'Apache Jena', 'Python', 'Shell'],
     capabilities: ['backend development', 'portal integration', 'data integration', 'validation', 'controlled access', 'semantic data'],
-    experience: tohsaSummary,
+    experience: 'Worked on backend and portal integration, data validation, and controlled access to research data.',
     caseStudy: {
       subtitle: 'Glycoscience data platform',
       status: collaborativeProjectNote,
@@ -144,15 +141,20 @@ export const publicProjects: readonly Entry[] = [
   }),
   ...flagship({
     id: 'ariadne', experienceId: 'ariadne-experience', title: 'Ariadne', context: 'independent',
-    summary: 'A Python research prototype for discovering and reusing evidence about the structure of unfamiliar data sources, starting with RDF knowledge graphs.',
+    summary: 'A Python research prototype that discovers and reuses evidence about how unfamiliar data sources are structured. It starts with RDF knowledge graphs.',
     categories: ['backend', 'data', 'architecture'],
     technologies: ['Python', 'Pydantic', 'SQLite', 'RDF', 'SPARQL'],
     capabilities: ['AI engineering', 'language model integration', 'AI output validation', 'validation', 'experimental design', 'evaluation-driven decisions', 'data modeling', 'persistence', 'API integration', 'AI-assisted development', 'knowledge graphs'],
-    experience: 'Defined the boundary between model interpretation and execution, directed AI-assisted implementation, and used synthetic evaluations to revise exploration rules and scope. Inconclusive results were retained.',
+    experience: 'Defined which operations a model could propose and which the software could execute. Directed AI-assisted implementation and revised the exploration rules after synthetic evaluations. Kept inconclusive results in the evaluation record.',
     caseStudy: {
       subtitle: 'Model interpretation, runtime authority, and reusable evidence',
-      status: 'Experimental research prototype · Controlled synthetic evaluation',
-      sections: ariadneFocus.map(decisionSection),
+      status: 'Research prototype. Evaluated in controlled synthetic tests.',
+      sections: [
+        ...ariadneFocus.map(decisionSection),
+        { heading: 'An incomplete answer that looks complete', paragraphs: [
+          'An upstream source can report success while returning only part of the result. If Ariadne stores that response as complete, a later investigation can inherit the error. Ariadne distinguishes incomplete responses from complete ones. Before reusing a stored finding, it checks whether the finding applies, is recent enough, and is still valid for reuse.',
+        ] },
+      ],
     },
     focuses: ariadneFocus,
   }),
@@ -162,14 +164,14 @@ export const publicProjects: readonly Entry[] = [
     categories: ['architecture', 'data', 'backend'],
     technologies: ['Python', 'SQLite'],
     capabilities: ['API integration', 'experimental design', 'evaluation-driven decisions', 'validation', 'persistence', 'scientific data'],
-    experience: 'Compared the adaptive layer with conventional connector workflows and narrowed the design toward evidence qualification, provenance, and reviewed reuse.',
+    experience: 'Compared Synkrita with conventional connector workflows. The results narrowed its role to checking evidence, recording its source, and reusing reviewed integration decisions.',
     caseStudy: {
       subtitle: 'When does another integration layer earn its place?',
-      status: 'Research prototype · Operator staging package prepared',
+      status: 'Research prototype. Staging package prepared.',
       sections: [
         decisionSection(synkritaBaseline),
         { heading: 'Large responses stay off the live path', paragraphs: [
-          'A publication response exceeded the live admission limit. Synkrita kept that limit and used a bounded offline importer that retained the source artifact and record positions. The imported observations preserve what the catalogue returned. A scientific claim still needs support in the cited material.',
+          'One publication response was too large for the live request limit. Synkrita kept the limit and imported the response offline. The importer preserved the original response and each record’s position within it. Each record shows what the catalogue returned. The cited material still has to support the scientific claim.',
         ] },
         { heading: 'What would justify the next layer?', paragraphs: [
           'The staging design separates shared evidence from private investigations. Real client integration, deployment validation, and independent scientific review remain open.',
@@ -199,7 +201,7 @@ export const publicProjects: readonly Entry[] = [
           flow: ['External story state', 'Bounded scene context', 'Draft and review', 'Human approval', 'State reconciliation'],
         },
         { heading: 'What makes a situation worth adapting?', paragraphs: [
-          'The narrative research compares causal pressures across stories and separately asks how a character’s skills or constraints shape a situation. This research helps frame authoring decisions. Its usefulness in runtime gameplay remains untested.',
+          'The research compares what makes different choices costly across stories. A separate line of work asks how a character’s skills or constraints shape those choices. Both inform the writing process. Their usefulness in gameplay remains untested.',
         ] },
         decisionSection(geasStability),
       ],

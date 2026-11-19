@@ -22,8 +22,8 @@ export function Inspector({ expression, entries, matches }: {
     <details className="inspector">
       <summary>Why these results?</summary>
       <div className="search-details">
-        <p>Catalog filters: <strong>{describeCriteria(expression, entries)}</strong></p>
-        <p>{counts.length ? 'Shown: ' + counts.join(' · ') : 'No records fit these filters in this view.'}</p>
+        <p>Criteria: <strong>{describeCriteria(expression, entries)}</strong></p>
+        <p>{counts.length ? 'Results: ' + counts.join(' · ') : 'No work in this view matches these criteria.'}</p>
         <details className="structured-criteria">
           <summary>Structured criteria</summary>
           <pre>{JSON.stringify(expression, null, 2)}</pre>
