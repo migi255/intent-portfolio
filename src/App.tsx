@@ -4,11 +4,10 @@ import { Inspector } from './components/Inspector'
 import { entries } from './data/content'
 import { evaluate } from './evaluation/evaluate'
 import { goals, goalLabels, type Goal } from './intent/model'
-import { parseIntent } from './intent/parser'
 import { maxQueryLength } from './intent/vocabulary'
 import { planInterface } from './planning/plan'
 import { Renderer } from './renderer/Renderer'
-import { readView, viewSearch, type ViewState } from './state/navigation'
+import { queryView, viewSearch, type createNavigation, type ViewState } from './state/navigation'
 
 const examples = ['Backend projects', 'Projects using Python', 'APIs but not coursework', 'System architecture']
 const navLabels: Record<Goal, string> = { projects: 'Projects', experience: 'Experience', decisions: 'Engineering decisions' }
@@ -18,12 +17,11 @@ const descriptions: Record<Goal, string> = {
   decisions: 'Read the constraints, rationale, and tradeoffs behind the work.',
 }
 
-function viewHref(view: ViewState) {
-  return viewSearch(view) + '#results'
-}
-
-export function App() {
-  const [view, setView] = useState(() => readView(window.location.search))
+export function App({ navigation, initialView }: {
+  navigation: ReturnType<typeof createNavigation>
+  initialView: ViewState
+}) {
+  const [view, setView] = useState(initialView)
   const [draft, setDraft] = useState(view.query)
   const [inspect, setInspect] = useState(false)
   const [transition, setTransition] = useState(0)
@@ -34,14 +32,14 @@ export function App() {
 
   useEffect(() => {
     function restore() {
-      const next = readView(window.location.search)
+      const next = navigation.restore()
       setView(next)
       setDraft(next.query)
       if (window.location.hash === '#results') setTransition(previous => previous + 1)
     }
     window.addEventListener('popstate', restore)
     return () => window.removeEventListener('popstate', restore)
-  }, [])
+  }, [navigation])
 
   useEffect(() => {
     if (transition > 0) {
@@ -64,8 +62,7 @@ export function App() {
   }
 
   function navigate(next: ViewState) {
-    const href = viewHref(next)
-    if (window.location.search + window.location.hash !== href) window.history.pushState(null, '', href)
+    navigation.navigate(next)
     setView(next)
     setDraft(next.query)
     setTransition(previous => previous + 1)
@@ -74,21 +71,22 @@ export function App() {
   function selectGoal(event: MouseEvent<HTMLAnchorElement>, goal: Goal) {
     if (event.button !== 0 || event.metaKey || event.altKey || event.ctrlKey || event.shiftKey) return
     event.preventDefault()
-    navigate({ goal, query: '' })
+    navigate(queryView(goal))
   }
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    navigate({ goal: activeGoal, query: draft.trim() ? draft : '' })
+    navigate(queryView(activeGoal, draft.trim() ? draft : ''))
   }
 
   const { intent, result, plan } = useMemo(() => {
-    const intent = parseIntent(view.query, view.goal, view.chosenGoal)
+    const { intent } = view
     if (intent.status !== 'resolved') return { intent }
     const result = evaluate(intent.expression, entries)
     return { intent, result, plan: planInterface(intent, result) }
   }, [view])
   const activeGoal = intent.status === 'resolved' ? intent.goal : view.goal
+  const hasSharedFilters = !view.query && viewSearch(view) !== viewSearch(queryView(activeGoal))
 
   return (
     <>
@@ -98,7 +96,7 @@ export function App() {
           <a className="wordmark" href="./"><span className="brand-mark" aria-hidden="true" />Intent Portfolio</a>
           <nav aria-label="Portfolio">
             {goals.map(goal => (
-              <a key={goal} href={viewHref({ goal, query: '' })} onClick={event => selectGoal(event, goal)}
+              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
                 aria-current={activeGoal === goal ? 'page' : undefined}>{navLabels[goal]}</a>
             ))}
           </nav>
@@ -129,7 +127,7 @@ export function App() {
             </form>
             <ul className="examples" aria-label="Example searches">
               {examples.map(query => (
-                <li key={query}><button type="button" onClick={() => navigate({ goal: 'projects', query })}>{query}</button></li>
+                <li key={query}><button type="button" onClick={() => navigate(queryView('projects', query))}>{query}</button></li>
               ))}
             </ul>
           </div>
@@ -138,7 +136,7 @@ export function App() {
         <section className="explorer" aria-labelledby="results">
           <nav className="goal-links" aria-label="Choose a visitor goal">
             {goals.map(goal => (
-              <a key={goal} href={viewHref({ goal, query: '' })} onClick={event => selectGoal(event, goal)}
+              <a key={goal} href={navigation.href(queryView(goal))} onClick={event => selectGoal(event, goal)}
                 aria-current={activeGoal === goal ? 'page' : undefined}>{goalLabels[goal]}</a>
             ))}
           </nav>
@@ -149,7 +147,8 @@ export function App() {
             </div>
             <p className="demo-label">Demonstration content</p>
           </div>
-          {view.query && <p className="committed-query">Search <strong>{view.query}</strong>
+          {(view.query || hasSharedFilters) && <p className="committed-query">
+            {view.query ? <>Search <strong>{view.query}</strong></> : 'Shared filters'}
             {result && <span> · {result.matches.length} {result.matches.length === 1 ? 'match' : 'matches'}</span>}
           </p>}
 
@@ -166,7 +165,7 @@ export function App() {
               <p>{intent.message}</p>
               <div className="choice-buttons">
                 {intent.goals.map(goal => <button key={goal} type="button"
-                  onClick={() => navigate({ ...view, chosenGoal: goal })}>{goalLabels[goal]}</button>)}
+                  onClick={() => navigate(queryView(view.goal, view.query, goal))}>{goalLabels[goal]}</button>)}
               </div>
             </div>
           )}
@@ -174,7 +173,7 @@ export function App() {
             <div className="notice" role="status">
               <h3>No matching entries</h3>
               <p>Try fewer criteria, a broader category, or a different technology.</p>
-              <button type="button" onClick={() => navigate({ goal: activeGoal, query: '' })}>Clear search</button>
+              <button type="button" onClick={() => navigate(queryView(activeGoal))}>Clear search</button>
             </div>
           )}
           {plan && result?.matches.length ? <Renderer plan={plan} entries={entries} /> : null}

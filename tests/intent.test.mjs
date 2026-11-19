@@ -5,7 +5,7 @@ import { entries } from '../.test-build/data/content.js'
 import { evaluate } from '../.test-build/evaluation/evaluate.js'
 import { parseIntent, resolveGoal } from '../.test-build/intent/parser.js'
 import { planInterface, validatePlan } from '../.test-build/planning/plan.js'
-import { readView, viewSearch } from '../.test-build/state/navigation.js'
+import { createNavigation, queryView, readView, viewSearch } from '../.test-build/state/navigation.js'
 
 function run(query, fallback, chosenGoal) {
   const intent = parseIntent(query, fallback, chosenGoal)
@@ -121,8 +121,132 @@ test('evaluation and planning are deterministic', () => {
   assert.deepEqual(result.matches.map(entry => entry.id), ['catalog-api', 'release-tooling'])
 })
 
-test('shareable view params round-trip committed queries and chosen layouts', () => {
-  const state = { goal: 'experience', query: 'React AND NOT coursework', chosenGoal: 'projects' }
-  assert.deepEqual(readView(viewSearch(state)), state)
-  assert.deepEqual(readView('?view=unknown&layout=constructor'), { goal: 'projects', query: '' })
+test('shareable URLs encode validated filters without carrying query phrasing', () => {
+  const query = '  Back-end and (Postgres OR Python) excluding coursework.  '
+  const view = queryView('projects', query)
+  const search = viewSearch(view)
+  assert.equal(view.intent.status, 'resolved')
+  const params = new URLSearchParams(search)
+  assert.deepEqual([...params.keys()], ['filter'])
+  assert.equal(params.get('filter'),
+    'kind:project,category:backend,technology:PostgreSQL,technology:Python,or,and,context:coursework,not,and,and')
+  assert.ok(!decodeURIComponent(search).includes('Postgres OR Python'))
+  assert.equal(viewSearch(queryView('projects', 'backend AND (PostgreSQL OR Python) AND NOT coursework')), search)
+  const restored = readView(search)
+  assert.equal(restored.query, '')
+  assert.deepEqual(restored.intent, view.intent)
+  assert.deepEqual(evaluate(restored.intent.expression, entries).matches.map(entry => entry.id), ['dataset-catalog'])
+})
+
+test('a fresh page restores the same case study and empty-result plans from canonical links', () => {
+  for (const query of ['case study Dataset Catalog', 'frontend AND Python', 'career timeline']) {
+    const view = queryView('projects', query)
+    assert.equal(view.intent.status, 'resolved')
+    const restored = readView(viewSearch(view))
+    assert.equal(restored.query, '')
+    assert.deepEqual(restored.intent, view.intent)
+    const result = evaluate(view.intent.expression, entries)
+    assert.deepEqual(planInterface(restored.intent, evaluate(restored.intent.expression, entries)), planInterface(view.intent, result))
+  }
+})
+
+test('rejects unknown predicates, IDs, syntax and arbitrary layout values', () => {
+  for (const filter of ['id:unpublished', 'technology:unknown', 'or', 'kind:project,kind:experience', 'kind:project,', 'all,'.repeat(1100)]) {
+    const params = new URLSearchParams({ view: 'decisions', filter, presentation: 'case-study' })
+    assert.deepEqual(readView('?' + params), queryView('decisions'))
+  }
+  const view = queryView('projects', 'backend')
+  view.intent.expression = { type: 'predicate', predicate: { field: 'id', value: 'unpublished' } }
+  assert.equal(viewSearch(view), '')
+  const search = '?view=projects&filter=category%3Abackend&presentation=unpublished&layout=constructor'
+  assert.equal(viewSearch(readView(search)), '?filter=category%3Abackend')
+})
+
+test('unresolved queries retain text locally and serialize only the fallback goal', () => {
+  for (const [query, status] of [['private marker @ example.invalid', 'unsupported'], ['projects OR experience', 'ambiguous']]) {
+    const view = queryView('experience', query)
+    assert.equal(view.intent.status, status)
+    assert.equal(view.query, query)
+    assert.equal(viewSearch(view), '?view=experience')
+    assert.deepEqual(readView(viewSearch(view)), queryView('experience'))
+  }
+  const chosen = queryView('experience', 'projects OR experience', 'experience')
+  assert.deepEqual(readView(viewSearch(chosen)).intent, chosen.intent)
+})
+
+function browserHistory(href = '/') {
+  const stack = [{ url: new URL(href, 'https://portfolio.test'), state: null }]
+  let index = 0
+  function entry(url, state) {
+    return { url: new URL(url, stack[index].url), state }
+  }
+  return {
+    location: {
+      get href() { return stack[index].url.href },
+      get search() { return stack[index].url.search },
+      get hash() { return stack[index].url.hash },
+    },
+    history: {
+      get state() { return stack[index].state },
+      get length() { return stack.length },
+      pushState(state, _, url) {
+        stack.splice(index + 1, stack.length, entry(url, state))
+        index += 1
+      },
+      replaceState(state, _, url) { stack[index] = entry(url, state) },
+      back() { index -= 1 },
+      forward() { index += 1 },
+    },
+  }
+}
+
+test('Back and Forward restore local submissions that share a URL, including layout clarification', () => {
+  const browser = browserHistory()
+  const navigation = createNavigation(browser)
+  const filtered = queryView('projects', 'Show your backend projects')
+  const unsupported = queryView('projects', 'private marker')
+  const ambiguous = queryView('projects', 'explore projects evaluate experience')
+  const clarified = queryView('projects', ambiguous.query, 'projects')
+
+  for (const view of [filtered, unsupported, ambiguous, clarified]) {
+    navigation.navigate(view)
+    assert.equal(browser.location.search, viewSearch(view))
+  }
+  assert.equal(browser.history.length, 5)
+  assert.equal(browser.location.search, '')
+  assert.deepEqual(Object.keys(browser.history.state), ['intentPortfolioKey'])
+  assert.ok(!JSON.stringify(browser.history.state).includes(ambiguous.query))
+  for (const view of [ambiguous, unsupported, filtered]) {
+    browser.history.back()
+    assert.deepEqual(navigation.restore(), view)
+  }
+
+  const refreshed = createNavigation(browser).restore()
+  assert.equal(refreshed.query, '')
+  assert.deepEqual(refreshed.intent, filtered.intent)
+  for (const view of [unsupported, ambiguous, clarified]) {
+    browser.history.forward()
+    assert.deepEqual(navigation.restore(), view)
+  }
+})
+
+test('legacy links are replaced in place and only validated filters survive reload', () => {
+  const supported = browserHistory('/?q=Back-end+and+Postgres#results')
+  const view = createNavigation(supported).restore()
+  assert.equal(supported.history.length, 1)
+  assert.equal(supported.location.search, viewSearch(view))
+  assert.equal(supported.location.hash, '#results')
+  assert.equal(view.query, 'Back-end and Postgres')
+  assert.deepEqual(createNavigation(supported).restore().intent, view.intent)
+
+  const rejected = browserHistory('/?view=experience&q=private+marker#private-marker')
+  const result = createNavigation(rejected).restore()
+  assert.equal(result.intent.status, 'unsupported')
+  assert.equal(rejected.location.search, '?view=experience')
+  assert.equal(rejected.location.hash, '')
+  assert.deepEqual(createNavigation(rejected).restore(), queryView('experience'))
+
+  const canonical = browserHistory('/?filter=category%3Abackend&q=private+marker#results')
+  assert.equal(createNavigation(canonical).restore().query, '')
+  assert.equal(canonical.location.search, '?filter=category%3Abackend')
 })

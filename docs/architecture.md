@@ -18,7 +18,7 @@ flowchart LR
 | `src/evaluation/evaluate.ts` | Three-valued matching against a supplied collection in source order |
 | `src/planning/plan.ts` | Selection and validation of declarative block types and record IDs |
 | `src/renderer/Renderer.tsx` | Closed React registry and reusable presentation of validated plans |
-| `src/state/navigation.ts` | Encoding and decoding shareable state |
+| `src/state/navigation.ts` | Shareable state and in-memory history restoration |
 | `src/App.tsx` | Explicit navigation, form state, focus, and orchestration of the pipeline |
 | `src/components/Inspector.tsx` | Display of the actual intermediate results and planned components |
 
@@ -30,7 +30,9 @@ The evaluator treats absent optional attributes and unsupported runtime predicat
 
 ## URL contract
 
-`view` records the selected goal. `q` records the committed query, and `layout` records a visitor's choice when the query admits more than one arrangement. The URL uses the root document for all views. Back and Forward restore the URL-driven state. Inspector visibility and an unsubmitted draft stay local to the current page. Query text is visible in a copied URL.
+`view` records the resolved goal, `filter` contains allowlisted predicates and Boolean operators in postfix order, and `presentation` can identify a supported layout for that goal. Direct links and reloads rebuild the resolved intent from these fields and run it through evaluation and planning.
+
+Typed text and clarification state live in document memory. History entries carry an opaque key so Back and Forward can restore that local state during the same page session. A reload retains canonical filters and clears the original text, unsubmitted draft, and local error or clarification state. If an older link includes `q`, the app interprets it locally and replaces the address with canonical parameters or the default view. The initial request for a legacy link may already contain the old query.
 
 ## Content and future integrations
 

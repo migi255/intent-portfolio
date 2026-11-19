@@ -16,7 +16,7 @@ npm run dev
 - **Explore Projects** shows expandable project cards. Try `projects involving APIs but not coursework`.
 - **Evaluate Experience** shows a technology summary, capability comparison, and timeline. Try `what experience do you have with infrastructure?`.
 - **Understand Engineering Decisions** shows architecture sequences, rationale, and tradeoffs. Try `case study Dataset Catalog` for one case.
-- **Inspector** shows the input, resolved intent, expression, evaluation, plan, and component selection. Copy the URL to share the current view and committed query.
+- **Inspector** shows the input, resolved intent, expression, evaluation, plan, and component selection. Copy the URL to share the current view and validated filters.
 
 ## Validate
 

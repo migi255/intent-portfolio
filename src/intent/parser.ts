@@ -16,7 +16,11 @@ const goalForPresentation: Record<Exclude<Presentation, 'default'>, Goal> = {
   'case-study': 'decisions',
 }
 
-export function resolveGoal(goal: Goal): Intent {
+export function isPresentationForGoal(value: unknown, goal: Goal): value is Exclude<Presentation, 'default'> {
+  return Object.entries(goalForPresentation).some(([name, target]) => value === name && goal === target)
+}
+
+export function resolveGoal(goal: Goal): Extract<Intent, { status: 'resolved' }> {
   return { status: 'resolved', goal, expression: scopes[goal], presentation: 'default' }
 }
 
