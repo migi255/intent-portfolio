@@ -1,4 +1,4 @@
-import { capabilities, categories, contexts, entries, kinds, technologies, type Entry } from '../data/content.js'
+import { categories, contexts, entries, kinds, searchableCapabilities, technologies, type Entry } from '../data/content.js'
 import type { Goal, Predicate, Presentation } from './model.js'
 
 export type Word =
@@ -15,7 +15,7 @@ const define = (word: Word, ...phrases: string[]) => {
 for (const value of kinds) define({ type: 'predicate', predicate: { field: 'kind', value } }, value)
 for (const value of categories) define({ type: 'predicate', predicate: { field: 'category', value } }, value)
 for (const value of technologies) define({ type: 'predicate', predicate: { field: 'technology', value } }, value.toLowerCase())
-for (const value of capabilities) define({ type: 'predicate', predicate: { field: 'capability', value } }, value.toLowerCase().replace(/-/g, ' '))
+for (const value of searchableCapabilities) define({ type: 'predicate', predicate: { field: 'capability', value } }, value.toLowerCase().replace(/-/g, ' '))
 for (const value of contexts) define({ type: 'predicate', predicate: { field: 'context', value } }, value)
 
 define({ type: 'predicate', predicate: { field: 'kind', value: 'project' } }, 'projects', 'work samples')
@@ -33,14 +33,14 @@ define({ type: 'predicate', predicate: { field: 'context', value: 'coursework' }
 
 define({ type: 'predicate', predicate: { field: 'capability', value: 'CI/CD' } }, 'ci / cd')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'system maintenance' } }, 'improved or extended')
-define({ type: 'predicate', predicate: { field: 'capability', value: 'performance optimization' } }, 'performance', 'performance optimization', 'performance engineering', 'algorithm optimization', 'optimize algorithms')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'performance optimization' } }, 'performance', 'performance optimization', 'performance engineering')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'differential testing' } }, 'validate algorithm changes', 'algorithm validation', 'compare optimized algorithms')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'regression testing' } }, 'testing practices', 'regression tests', 'test reliability')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'debugging' } }, 'debug', 'troubleshooting', 'diagnose defects')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'requirements interpretation' } }, 'responding to user feedback', 'researcher feedback', 'researcher requirements', 'user requirements')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'scientific correctness' } }, 'preserve correctness when optimizing software', 'preserve correctness', 'correctness')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'reliability engineering' } }, 'application reliability', 'reliability')
-define({ type: 'predicate', predicate: { field: 'capability', value: 'bounded concurrency' } }, 'concurrency', 'concurrent image encoding')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'bounded concurrency' } }, 'concurrency')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'system maintenance' } }, 'maintaining existing software', 'existing codebase maintenance', 'maintenance')
 define({ type: 'predicate', predicate: { field: 'category', value: 'architecture' } }, 'with system architecture')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'language model integration' } }, 'integrated language models', 'llm integration', 'language models')

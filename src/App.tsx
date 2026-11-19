@@ -149,7 +149,9 @@ export function App({ navigation, initialView }: {
               <h2 id="results" tabIndex={-1}>{goalLabels[activeGoal]}</h2>
               <p>{descriptions[activeGoal]}</p>
             </div>
-            <p className="demo-label">{result?.matches.some(entry => entry.evidence.status === 'draft') ? 'Includes draft content for review' : 'Demonstration content'}</p>
+            {result?.matches.some(entry => entry.evidence.status === 'draft') && (
+              <p className="demo-label">Includes draft content for review</p>
+            )}
           </div>
           {(view.query || hasSharedFilters) && <p className="committed-query">
             {view.query ? <>Search <strong>{view.query}</strong></> : 'Shared filters'}

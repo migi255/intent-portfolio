@@ -1,11 +1,11 @@
-import { capabilities, categories, contexts, entries, kinds, technologies } from '../data/content.js'
+import { categories, contexts, entries, kinds, searchableCapabilities, technologies } from '../data/content.js'
 import type { Expression, Predicate } from '../intent/model.js'
 
 const predicates: Predicate[] = [
   ...kinds.map(value => ({ field: 'kind' as const, value })),
   ...categories.map(value => ({ field: 'category' as const, value })),
   ...technologies.map(value => ({ field: 'technology' as const, value })),
-  ...capabilities.map(value => ({ field: 'capability' as const, value })),
+  ...searchableCapabilities.map(value => ({ field: 'capability' as const, value })),
   ...contexts.map(value => ({ field: 'context' as const, value })),
   ...entries.map(entry => ({ field: 'id' as const, value: entry.id })),
 ]

@@ -6,7 +6,7 @@ import { evaluate } from '../.test-build/evaluation/evaluate.js'
 import { parseIntent, resolveGoal } from '../.test-build/intent/parser.js'
 import { createTokenizer } from '../.test-build/intent/vocabulary.js'
 import { planInterface, validatePlan } from '../.test-build/planning/plan.js'
-import { createNavigation, queryView, readView, viewSearch } from '../.test-build/state/navigation.js'
+import { caseStudyView, createNavigation, queryView, readView, viewSearch } from '../.test-build/state/navigation.js'
 
 function run(query, fallback, chosenGoal) {
   const intent = parseIntent(query, fallback, chosenGoal)
@@ -49,35 +49,89 @@ test('parses an explicit conjunction into typed predicates', () => {
     left: { type: 'predicate', predicate: { field: 'kind', value: 'project' } },
     right: { type: 'predicate', predicate: { field: 'category', value: 'backend' } },
   })
-  assert.deepEqual(ids, ['dataset-catalog', 'event-replay'])
+  assert.deepEqual(ids, ['tohsa', 'ariadne', 'synkrita'])
 })
 
 test('AND binds more tightly than OR and NOT binds to its operand', () => {
-  assert.deepEqual(run('frontend OR Python AND NOT coursework').ids, ['dataset-catalog', 'release-dashboard'])
-  assert.deepEqual(run('frontend OR Python AND NOT independent').ids, ['release-dashboard', 'event-replay'])
-  assert.deepEqual(run('NOT NOT Python').ids, ['dataset-catalog', 'event-replay'])
+  assert.deepEqual(run('mass spectrometry OR Python AND NOT professional').ids, ['mass-spectrometry-analysis', 'ariadne', 'synkrita', 'geas'])
+  assert.deepEqual(run('NOT NOT Python').ids, ['ariadne', 'synkrita', 'geas'])
 })
 
 test('evaluates nested groups and respects explicit precedence changes', () => {
-  assert.deepEqual(run('(frontend OR (backend AND Python)) AND NOT (Docker OR coursework)').ids, ['dataset-catalog'])
-  assert.deepEqual(run('(frontend OR Python) AND NOT independent').ids, ['event-replay'])
+  assert.deepEqual(run('(mass spectrometry OR (backend AND Python)) AND NOT (Docker OR professional)').ids, ['ariadne', 'synkrita'])
+  assert.deepEqual(run('(mass spectrometry OR Python) AND NOT independent').ids, ['mass-spectrometry-analysis'])
 })
 
-test('resolves aliases, punctuation, and the supported natural-language requests', () => {
+test('resolves aliases, punctuation, and supported natural-language requests', () => {
   const cases = [
-    ['Show me your backend projects.', 'projects', ['dataset-catalog', 'event-replay']],
-    ['What have you built using Python?', 'projects', ['dataset-catalog', 'event-replay']],
-    ['Show projects involving APIs but not coursework.', 'projects', ['dataset-catalog']],
-    ['What experience do you have with infrastructure?', 'experience', ['release-tooling']],
-    ['How do you approach system architecture?', 'decisions', ['dataset-catalog', 'release-dashboard', 'event-replay', 'intent-pipeline']],
-    ['Show me your most relevant projects for front-end engineering.', 'projects', ['release-dashboard']],
-    ['Back-end using Postgres', 'projects', ['dataset-catalog']],
+    ['Show me your backend projects.', 'projects', ['tohsa', 'ariadne', 'synkrita']],
+    ['What have you built using Python?', 'projects', ['ariadne', 'synkrita', 'geas']],
+    ['Show projects involving APIs but not coursework.', 'projects', []],
+    ['What experience do you have with data integration?', 'experience', ['tohsa-engineering']],
+    ['Show me your most relevant projects for front-end engineering.', 'projects', ['tohsa']],
+    ['Back-end using Postgres', 'projects', []],
+    ['Back-end using SPARQL', 'projects', ['ariadne']],
   ]
   for (const [query, goal, ids] of cases) {
     assert.equal(run(query).intent.goal, goal)
     assert.deepEqual(run(query).ids, ids)
   }
+  assert.equal(run('How do you approach system architecture?').intent.goal, 'decisions')
   assert.equal(run('What have you built using Python?', 'experience').intent.goal, 'projects')
+})
+
+test('the production catalog exposes the flagship cards, search, and canonical case studies', () => {
+  assert.ok(entries.every(entry => entry.evidence.status === 'approved'))
+  assert.equal(new Set(entries.map(entry => entry.id)).size, entries.length)
+  const ids = ['mass-spectrometry-analysis', 'tohsa', 'ariadne', 'synkrita', 'geas']
+  assert.deepEqual(run('').ids, ids)
+  const decisions = run('', 'decisions').plan.blocks.flatMap(block => block.entryIds)
+  for (const id of ids) {
+    const project = entries.find(entry => entry.id === id)
+    assert.ok(decisions.includes(id))
+    assert.deepEqual(run(project.title).ids, [id])
+    const link = readView(viewSearch(caseStudyView(id)))
+    const result = evaluate(link.intent.expression, entries)
+    assert.deepEqual(planInterface(link.intent, result).blocks, [{ kind: 'case-study', entryIds: [id] }])
+    assert.ok(project.caseStudy.sections.length > 0)
+    assert.ok(project.related.some(related => entries.find(entry => entry.id === related)?.kind === 'experience'))
+  }
+})
+
+test('collaborative project searches expose only the public titles and approved capabilities', () => {
+  const cases = [
+    ['mass-spectrometry-analysis', 'Mass spectrometry analysis software', [
+      'scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization',
+      'validation', 'scientific correctness', 'requirements interpretation',
+    ]],
+    ['tohsa', 'TOHSA', [
+      'backend development', 'portal integration', 'data integration', 'validation',
+      'controlled access', 'semantic data',
+    ]],
+  ]
+  for (const [id, title, capabilities] of cases) {
+    const experienceId = id + '-engineering'
+    const project = entries.find(entry => entry.id === id)
+    const experience = entries.find(entry => entry.id === experienceId)
+    assert.deepEqual(project.related, [experienceId])
+    for (const entry of [project, experience]) {
+      assert.equal(entry.technologies, undefined)
+      assert.deepEqual(entry.capabilities, capabilities)
+      assert.deepEqual(run(entry.title).ids, [entry.id])
+    }
+    assert.equal(experience.summary, project.summary)
+    assert.deepEqual(run('Case study ' + title).ids, [id])
+    assert.ok(capabilities.every(capability => run(capability).ids.includes(id)))
+  }
+  for (const alias of ['performance', 'performance engineering']) {
+    assert.ok(run(alias).ids.includes('mass-spectrometry-analysis'))
+  }
+  for (const removed of ['algorithm optimization', 'optimize algorithms']) {
+    assert.equal(parseIntent(removed).status, 'unsupported')
+    assert.deepEqual(readView('?' + new URLSearchParams({ filter: 'capability:' + removed })), queryView('projects'))
+  }
+  assert.deepEqual(run('mass spectrometry AND Scala').ids, [])
+  assert.deepEqual(run('TOHSA AND SPARQL').ids, [])
 })
 
 test('scientific engineering vocabulary resolves supported intent examples deterministically', () => {
@@ -138,19 +192,19 @@ test('missing attributes and unsupported predicates remain indeterminate, even w
 })
 
 test('empty results produce an empty plan', () => {
-  const { ids, plan } = run('frontend AND Python')
+  const { ids, plan } = run('frontend AND Scala')
   assert.deepEqual(ids, [])
   assert.deepEqual(plan, { goal: 'projects', blocks: [] })
 })
 
 test('planner selects distinct layouts and supports explicitly requested views', () => {
   assert.deepEqual(run('').plan.blocks.map(block => block.kind), ['cards'])
-  assert.deepEqual(run('', 'experience').plan.blocks.map(block => block.kind), ['skills', 'comparison', 'timeline'])
+  assert.deepEqual(run('', 'experience').plan.blocks.map(block => block.kind), ['skills', 'comparison'])
   assert.deepEqual(run('', 'decisions').plan.blocks.map(block => block.kind), ['decisions'])
-  assert.deepEqual(run('career timeline').plan.blocks.map(block => block.kind), ['timeline'])
-  assert.deepEqual(run('compare infrastructure').plan.blocks.map(block => block.kind), ['comparison'])
-  const detail = run('case study Dataset Catalog')
-  assert.deepEqual(detail.plan.blocks, [{ kind: 'case-study', entryIds: ['dataset-catalog'] }])
+  assert.deepEqual(run('career timeline').plan.blocks.map(block => block.kind), [])
+  assert.deepEqual(run('compare data integration').plan.blocks.map(block => block.kind), ['comparison'])
+  const detail = run('case study TOHSA')
+  assert.deepEqual(detail.plan.blocks, [{ kind: 'case-study', entryIds: ['tohsa'] }])
 })
 
 test('validates plan structure and rejects unregistered, duplicate, or missing references', () => {
@@ -164,8 +218,8 @@ test('validates plan structure and rejects unregistered, duplicate, or missing r
     { goal: 'projects', blocks: [{ kind: 'cards', entryIds: [] }] },
     { goal: 'projects', blocks: [{ kind: 'cards', entryIds: [entries[0].id, entries[0].id] }] },
     { ...plan, blocks: [...plan.blocks, ...plan.blocks] },
-    { goal: 'experience', blocks: [{ kind: 'timeline', entryIds: ['dataset-catalog'] }] },
-    { goal: 'decisions', blocks: [{ kind: 'case-study', entryIds: ['catalog-api'] }] },
+    { goal: 'experience', blocks: [{ kind: 'timeline', entryIds: ['tohsa'] }] },
+    { goal: 'decisions', blocks: [{ kind: 'case-study', entryIds: ['tohsa-engineering'] }] },
   ]) assert.equal(validatePlan(invalid, entries), false)
 })
 
@@ -173,7 +227,7 @@ test('evaluation and planning are deterministic', () => {
   assert.deepEqual(run('(frontend OR backend) AND NOT coursework'), run('(frontend OR backend) AND NOT coursework'))
   const intent = resolveGoal('experience')
   const result = evaluate(intent.expression, entries)
-  assert.deepEqual(result.matches.map(entry => entry.id), ['catalog-api', 'release-tooling'])
+  assert.deepEqual(result.matches.map(entry => entry.id), ['mass-spectrometry-analysis-engineering', 'tohsa-engineering', 'ariadne-experience', 'synkrita-engineering', 'geas-engineering'])
 })
 
 test('shareable URLs encode validated filters without carrying query phrasing', () => {
@@ -190,11 +244,11 @@ test('shareable URLs encode validated filters without carrying query phrasing', 
   const restored = readView(search)
   assert.equal(restored.query, '')
   assert.deepEqual(restored.intent, view.intent)
-  assert.deepEqual(evaluate(restored.intent.expression, entries).matches.map(entry => entry.id), ['dataset-catalog'])
+  assert.deepEqual(evaluate(restored.intent.expression, entries).matches.map(entry => entry.id), ['ariadne', 'synkrita'])
 })
 
 test('a fresh page restores the same case study and empty-result plans from canonical links', () => {
-  for (const query of ['case study Dataset Catalog', 'frontend AND Python', 'career timeline']) {
+  for (const query of ['case study TOHSA', 'frontend AND Scala', 'career timeline']) {
     const view = queryView('projects', query)
     assert.equal(view.intent.status, 'resolved')
     const restored = readView(viewSearch(view))

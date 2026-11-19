@@ -32,8 +32,7 @@ export function planInterface(intent: Extract<Intent, { status: 'resolved' }>, r
 
 function supportsBlock(kind: BlockKind, entry: Entry): boolean {
   if (kind === 'timeline') return Boolean(entry.date)
-  if (kind === 'case-study') return Boolean(entry.caseStudy || entry.decision)
-  if (kind === 'decisions') return Boolean(entry.decision)
+  if (kind === 'case-study' || kind === 'decisions') return Boolean(entry.caseStudy || entry.decision)
   return true
 }
 

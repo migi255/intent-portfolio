@@ -36,7 +36,7 @@ Typed text and clarification state live in document memory. History entries carr
 
 ## Content and future integrations
 
-Files under `src/data/` are public build inputs. The demonstration records are fictional. The portfolio's own architectural decision describes this implementation. Keep private source documents and evidence mapping outside the build graph and tracked files. Approved content can carry a publication-safe evidence reference.
+Files under `src/data/` are public build inputs. The public project and experience records live in `src/data/projects.ts`. The portfolio's own architectural decision describes this implementation. Keep private source documents and evidence mapping outside the build graph and tracked files. Approved content can carry a publication-safe evidence reference.
 
 Core features have no network-service dependency. A future contact service can be an optional client adapter calling a Pages Function without changing the intent or evaluation modules. Keep private credentials on the server.
 
@@ -51,7 +51,7 @@ Only the theme preference is stored. Choosing System removes the stored override
 Run `npm run dev -- --mode review` for an authorized local review. This mode
 loads the ignored `.private/review.ts` overlay on loopback and labels results
 that contain drafts. Standard development, builds (including builds in review
-mode), and preview use the empty tracked overlay. The project, experience,
-and four case-study records being prepared remain drafts. Keep source evidence
+mode), and preview use the tracked public catalog with an empty review overlay.
+Local review records can override public records by ID. Keep source evidence
 outside the application and prepare a separately approved content change for
 release.

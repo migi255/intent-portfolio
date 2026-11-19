@@ -1,6 +1,6 @@
 # Intent Portfolio
 
-A browser-first engineering portfolio demonstrating how a controlled language query can change both the records shown and the way they are presented. The first milestone uses labeled demonstration content while professional details await release review.
+A browser-first engineering portfolio demonstrating how a controlled language query can change both the records shown and the way they are presented. The public catalog includes five engineering projects with case studies and experience records.
 
 ## Run locally
 
