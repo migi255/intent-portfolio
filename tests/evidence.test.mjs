@@ -96,7 +96,7 @@ test('the direct browse surface and canonical case studies keep their specialize
   const query = run('case study Ariadne')
   assert.deepEqual(query.plan.blocks, [{ kind: 'case-study', entryIds: ['ariadne'] }])
   assert.equal(viewSearch(query.view), viewSearch(caseStudyView('ariadne')))
-  assert.deepEqual(run('compare data integration').plan.blocks, [{ kind: 'comparison', entryIds: ['tohsa-engineering'] }])
+  assert.deepEqual(run('compare data integration').plan.blocks, [{ kind: 'comparison', entryIds: ['tohsa-engineering', 'synkrita-engineering'] }])
 })
 
 test('zero results keep the original query and offer only actual one-criterion relaxations', () => {
@@ -127,4 +127,46 @@ test('only approved public IDs and titles participate in grouped search and URL 
   assert.equal(evidenceView('unlisted project title').intent.status, 'unsupported')
   const unknownFilter = new URLSearchParams({ view: 'decisions', filter: 'id:unlisted', presentation: 'grouped' })
   assert.deepEqual(readView('?' + unknownFilter), queryView('decisions'))
+})
+
+test('research delivery and coordination queries surface the relevant public records', () => {
+  const projectIds = { g: 'mass-spectrometry-analysis', t: 'tohsa', s: 'synkrita' }
+  const cases = [
+    ['Working with scientists to define requirements', 'gts'],
+    ['Delivering software from requirements to deployment', 'g'],
+    ['Iterative research software development', 'g'],
+    ['Coordinating engineering work across contributors', 't'],
+    ['Managing technical dependencies', 't'],
+    ['Scientific software testing and validation', 'gt'],
+    ['Balancing performance and scientific correctness', 'g!'],
+    ['Research data access control and security', 't'],
+    ['Benchmarking scientific software', 'gt'],
+    ['Collaborating with biomedical researchers', 'gts'],
+    ['Mentoring students and junior contributors', 't'],
+    ['Integrating scientific datasets and services', 'ts'],
+    ['Translating research needs into technical architecture', 'ts'],
+    ['Maintaining scientific applications', 'g'],
+    ['Scientific workflow reproducibility', 's'],
+    ['AI-assisted scientific infrastructure', 's'],
+  ]
+  for (const [query, expected] of cases) {
+    const projects = Array.from(expected.replace('!', ''), key => projectIds[key])
+    const decisions = expected.endsWith('!') ? ['mass-spectrometry-analysis-performance'] : []
+    assert.deepEqual(run(query).ids, [
+      ...projects, ...decisions, ...projects.map(id => id + '-engineering'),
+    ], query)
+  }
+  for (const query of ['GxP release management', 'Nextflow production pipelines', 'computerized system validation']) {
+    assert.equal(evidenceView(query).intent.status, 'unsupported', query)
+  }
+})
+
+test('research delivery searches accept alternate phrasing and preserve explicit scope', () => {
+  assert.deepEqual(run('Show projects that involved researcher collaboration').ids, [
+    'mass-spectrometry-analysis', 'tohsa', 'synkrita',
+  ])
+  assert.deepEqual(run('What experience do you have with iterative software delivery and requirements interpretation?').ids,
+    ['mass-spectrometry-analysis-engineering'])
+  assert.deepEqual(run('Which projects involve scientific benchmarking and controlled access?').ids, ['tohsa'])
+  assert.deepEqual(run('Tell me about student mentoring').ids, ['tohsa', 'tohsa-engineering'])
 })

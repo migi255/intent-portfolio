@@ -97,7 +97,7 @@ const analysisPerformance: Focus = {
   id: 'mass-spectrometry-analysis-performance', title: 'Speed changes had to leave results unchanged',
   capabilities: ['performance optimization', 'validation', 'scientific correctness'],
   paragraphs: [
-    'I strengthened validation before making performance changes. I kept changes intended to alter scientific results separate from the performance work. This let me check that the faster software still produced the established results.',
+    'I strengthened validation before making performance changes. I kept changes intended to alter scientific results separate from the performance work. I compared performance and checked that the faster software still produced the established results.',
   ],
 }
 
@@ -107,16 +107,16 @@ export const publicProjects: readonly Entry[] = [
     summary: analysisSummary,
     categories: ['data'],
     technologies: ['Scala', 'HTML', 'JavaScript', 'CSS', 'HOCON'],
-    capabilities: ['scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization', 'validation', 'scientific correctness', 'requirements interpretation'],
-    experience: 'Translated researcher requirements into application changes. Improved performance while preserving established scientific results.',
+    capabilities: ['scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization', 'validation', 'scientific correctness', 'requirements interpretation', 'scientific collaboration', 'scientific software validation', 'scientific benchmarking', 'iterative software delivery'],
+    experience: 'I work directly with researchers to define requirements, implement and validate changes, and deploy updates. Researcher feedback guides the next release.',
     focuses: [analysisPerformance],
     caseStudy: {
       subtitle: 'Performance and researcher requirements',
       status: collaborativeProjectNote,
       sections: [
         decisionSection(analysisPerformance),
-        { heading: 'Researcher requirements', paragraphs: [
-          'Translated researcher requirements into application improvements and validated the changes.',
+        { heading: 'Researcher requirements and delivery', paragraphs: [
+          'I maintain the application as an ongoing research tool. I weigh researcher requests against performance and scientific correctness. After deploying validated updates, I gather feedback for the next set of changes.',
         ] },
       ],
     },
@@ -126,8 +126,8 @@ export const publicProjects: readonly Entry[] = [
     summary: tohsaSummary,
     categories: ['backend', 'data', 'frontend'],
     technologies: ['JavaScript', 'TypeScript', 'Java', 'Spring Boot', 'Apache Jena', 'Python', 'Shell'],
-    capabilities: ['backend development', 'portal integration', 'data integration', 'validation', 'controlled access', 'semantic data'],
-    experience: 'Worked on backend and portal integration, data validation, and controlled access to research data.',
+    capabilities: ['backend development', 'portal integration', 'data integration', 'validation', 'controlled access', 'semantic data', 'scientific collaboration', 'scientific software validation', 'scientific benchmarking', 'engineering coordination', 'technical dependencies', 'student mentoring', 'research infrastructure design'],
+    experience: 'I coordinate work across technical and scientific contributors. I help resolve dependencies and guide undergraduate and graduate students on technical and scientific work.',
     caseStudy: {
       subtitle: 'Glycoscience data platform',
       status: collaborativeProjectNote,
@@ -135,7 +135,9 @@ export const publicProjects: readonly Entry[] = [
         { heading: 'Project context', paragraphs: [
           'The Human Glycome Atlas Project is developing TOHSA as a knowledge base for glycoscience data.',
         ] },
-        { heading: 'Engineering contribution', paragraphs: [tohsaSummary] },
+        { heading: 'Engineering contribution', paragraphs: [
+          'I contribute backend and portal changes for data integration and controlled access. I work with researchers and collaborators to define scientific requirements and coordinate testing, benchmarking, and validation.',
+        ] },
       ],
     },
   }),
@@ -163,8 +165,8 @@ export const publicProjects: readonly Entry[] = [
     summary: 'A research prototype exploring when an extra integration layer helps scientific workflows that already have capable connectors.',
     categories: ['architecture', 'data', 'backend'],
     technologies: ['Python', 'SQLite'],
-    capabilities: ['API integration', 'experimental design', 'evaluation-driven decisions', 'validation', 'persistence', 'scientific data'],
-    experience: 'Compared Synkrita with conventional connector workflows. The results narrowed its role to checking evidence, recording its source, and reusing reviewed integration decisions.',
+    capabilities: ['API integration', 'experimental design', 'evaluation-driven decisions', 'validation', 'persistence', 'scientific data', 'scientific collaboration', 'data integration', 'research infrastructure design', 'workflow reproducibility', 'AI-supported research infrastructure'],
+    experience: 'I work with researchers to define what they need from a shared interface to scientific datasets and tools. Those requirements guide the architecture and implementation. Connector comparisons narrowed the prototype’s role to checking evidence and reusing reviewed integration decisions.',
     caseStudy: {
       subtitle: 'When does another integration layer earn its place?',
       status: 'Research prototype. Staging package prepared.',
@@ -174,7 +176,8 @@ export const publicProjects: readonly Entry[] = [
           'One publication response was too large for the live request limit. Synkrita kept the limit and imported the response offline. The importer preserved the original response and each record’s position within it. Each record shows what the catalogue returned. The cited material still has to support the scientific claim.',
         ] },
         { heading: 'What would justify the next layer?', paragraphs: [
-          'The staging design separates shared evidence from private investigations. Real client integration, deployment validation, and independent scientific review remain open.',
+          'The prototype tests evidence handling for AI clients and has a reproducible staging package. The staging design separates shared evidence from private investigations. Real client integration, deployment validation, and independent scientific review remain open.',
+          'The longer-term goal is to give researchers one interface for datasets and tools across the NIH Common Fund ecosystem. The plan is to connect multiple tool servers through the Model Context Protocol (MCP). Those integrations remain planned.',
           'A useful next comparison would measure verification and correction effort on unfamiliar investigations at the same standard of evidence.',
         ], flowCaption: 'Intended staging request flow', flow: ['Research client', 'Read service', 'Scoped retained records'] },
       ],

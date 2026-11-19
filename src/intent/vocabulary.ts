@@ -33,7 +33,7 @@ define({ type: 'predicate', predicate: { field: 'context', value: 'coursework' }
 
 define({ type: 'predicate', predicate: { field: 'capability', value: 'CI/CD' } }, 'ci / cd')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'system maintenance' } }, 'improved or extended')
-define({ type: 'predicate', predicate: { field: 'capability', value: 'performance optimization' } }, 'performance', 'performance optimization', 'performance engineering')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'performance optimization' } }, 'performance', 'performance optimization', 'performance engineering', 'balancing performance')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'differential testing' } }, 'validate algorithm changes', 'algorithm validation', 'compare optimized algorithms')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'regression testing' } }, 'testing practices', 'regression tests', 'test reliability')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'debugging' } }, 'debug', 'troubleshooting', 'diagnose defects')
@@ -51,6 +51,33 @@ define({ type: 'predicate', predicate: { field: 'capability', value: 'validation
 define({ type: 'predicate', predicate: { field: 'capability', value: 'evaluation-driven decisions' } }, 'driven by failed tests', 'negative controls', 'where testing changed the design')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'API integration' } }, 'external integrations', 'apis and external integrations')
 define({ type: 'predicate', predicate: { field: 'capability', value: 'AI-assisted development' } }, 'ai assisted development workflows')
+// Keep hiring-oriented phrases tied to catalog capabilities without inferring new claims.
+define({ type: 'predicate', predicate: { field: 'capability', value: 'scientific collaboration' } },
+  'working with scientists to define requirements', 'collaborating with biomedical researchers', 'researcher collaboration')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'iterative software delivery' } },
+  'delivering software from requirements to deployment', 'iterative research software development')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'engineering coordination' } },
+  'coordinating engineering work across contributors')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'technical dependencies' } },
+  'managing technical dependencies')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'scientific software validation' } },
+  'scientific software testing and validation')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'controlled access' } },
+  'research data access control and security')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'scientific benchmarking' } },
+  'benchmarking scientific software')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'student mentoring' } },
+  'mentoring students', 'mentoring students and junior contributors')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'data integration' } },
+  'integrating scientific datasets and services')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'research infrastructure design' } },
+  'translating research needs into technical architecture')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'software maintenance' } },
+  'maintaining scientific applications')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'workflow reproducibility' } },
+  'scientific workflow reproducibility')
+define({ type: 'predicate', predicate: { field: 'capability', value: 'AI-supported research infrastructure' } },
+  'ai assisted scientific infrastructure')
 define({ type: 'goal', goal: 'projects' }, 'explore projects', 'what have you built')
 define({ type: 'goal', goal: 'experience' }, 'evaluate experience', 'what experience do you have')
 define({ type: 'goal', goal: 'decisions' }, 'system architecture', 'engineering approach', 'engineering decisions', 'selected engineering decisions', 'architecture decisions', 'engineering decisions and tradeoffs')
@@ -65,7 +92,7 @@ define({ type: '(' }, '(')
 define({ type: ')' }, ')')
 define({ type: 'skip' },
   'show me', 'show', 'tell me about',
-  'how do you approach', 'how do you', 'how have you', 'were', 'into', 'involve', 'involving', 'involved', 'demonstrate', 'using', 'with', 'your', 'me', 'for', 'about', 'in', 'when',
+  'how do you approach', 'how do you', 'how have you', 'were', 'into', 'involve', 'involving', 'involved', 'that involved', 'demonstrate', 'using', 'with', 'your', 'me', 'for', 'about', 'in', 'when',
   'the', 'a', 'an', 'most relevant', 'examples of', 'show examples of', 'what', 'which', 'do you have', 'have you used', 'work', 'software', 'changes', 'what systems have you')
 
 export const maxQueryLength = 240

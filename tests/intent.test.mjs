@@ -67,7 +67,7 @@ test('resolves aliases, punctuation, and supported natural-language requests', (
     ['Show me your backend projects.', 'projects', ['tohsa', 'ariadne', 'synkrita']],
     ['What have you built using Python?', 'projects', ['tohsa', 'ariadne', 'synkrita', 'geas']],
     ['Show projects involving APIs but not coursework.', 'projects', []],
-    ['What experience do you have with data integration?', 'experience', ['tohsa-engineering']],
+    ['What experience do you have with data integration?', 'experience', ['tohsa-engineering', 'synkrita-engineering']],
     ['Show me your most relevant projects for front-end engineering.', 'projects', ['tohsa']],
     ['Back-end using Postgres', 'projects', []],
     ['Back-end using SPARQL', 'projects', ['ariadne']],
@@ -141,11 +141,13 @@ test('collaborative project searches expose only the approved technologies and c
   const cases = [
     ['mass-spectrometry-analysis', 'Mass spectrometry analysis software', [
       'scientific software', 'mass spectrometry', 'software maintenance', 'performance optimization',
-      'validation', 'scientific correctness', 'requirements interpretation',
+      'validation', 'scientific correctness', 'requirements interpretation', 'scientific collaboration',
+      'scientific software validation', 'scientific benchmarking', 'iterative software delivery',
     ], ['Scala', 'HTML', 'JavaScript', 'CSS', 'HOCON']],
     ['tohsa', 'TOHSA', [
       'backend development', 'portal integration', 'data integration', 'validation',
-      'controlled access', 'semantic data',
+      'controlled access', 'semantic data', 'scientific collaboration', 'scientific software validation',
+      'scientific benchmarking', 'engineering coordination', 'technical dependencies', 'student mentoring', 'research infrastructure design',
     ], ['JavaScript', 'TypeScript', 'Java', 'Spring Boot', 'Apache Jena', 'Python', 'Shell']],
   ]
   for (const [id, title, capabilities, technologies] of cases) {
