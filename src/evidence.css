@@ -128,30 +128,10 @@
 .guide-content h2 { margin-bottom: .65rem; }
 .guide-content p + p { margin-top: .6rem; }
 .guide-content p { max-width: 78ch; }
-.package-links dd { margin: 0 0 .6rem; overflow-wrap: anywhere; }
-.package-links dt, .mechanism-examples dt { font-weight: 650; }
-.prompt-panel {
-  display: grid;
-  gap: .45rem;
-  max-width: 49rem;
-  margin-top: .8rem;
-  padding: .9rem;
-  background: var(--paper);
-  border: 1px solid var(--line);
-}
-.prompt-panel label { font-weight: 650; }
-.prompt-panel select, .prompt-panel textarea, .prompt-panel button {
-  max-width: 100%;
-  padding: .48rem .65rem;
-  border: 1px solid var(--control-line);
-  background: var(--paper);
-  color: var(--text);
-  font: inherit;
-}
-.prompt-panel textarea { width: 100%; resize: vertical; }
-.prompt-panel button { justify-self: start; background: var(--action); color: var(--on-action); }
-.prompt-panel button:disabled { opacity: .65; cursor: default; }
-.copy-status { min-height: 1.4em; color: var(--muted); }
+.mechanism-examples dt { font-weight: 650; }
+.agent-questions { padding-inline-start: 1.4rem; }
+.agent-questions li + li { margin-top: .35rem; }
+.guide-assessment section { margin-top: .8rem; }
 .mechanism-columns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -173,17 +153,16 @@
 }
 
 .home-data-link { margin: -.65rem 0 1.15rem; font-size: .92rem; }
-.package-links button {
-  margin: .25rem 0 .25rem .6rem;
-  padding: .28rem .55rem;
-  border: 1px solid var(--control-line);
-  background: var(--paper);
-  color: var(--text);
-  font: inherit;
-}
-.agent-prompt-details { margin-block: 1rem 1.8rem; }
-.agent-prompt-details > p { margin-top: .5rem; }
 .fit-example { margin-top: 1rem; padding: 1rem; border-top: 2px solid var(--blue); background: var(--paper); }
 .fit-example h4 { margin: .85rem 0 .35rem; }
 .fit-example ul { padding-inline-start: 1.3rem; }
 .fit-example li + li { margin-top: .8rem; }
+
+.career-list { margin-top: .65rem; }
+.career-list h3 { font-size: 1.1rem; }
+.career-list p + p { margin-top: .4rem; }
+.career-list article:target { outline: 2px solid var(--focus); outline-offset: .2rem; }
+
+@media print {
+  .career-list article { break-inside: avoid; }
+}

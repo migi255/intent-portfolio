@@ -21,6 +21,8 @@ test('publication rejects missing qualifications, invalid references and duplica
   for (const change of [{ limit: '' }, { source: { entryId: 'unlisted' } }, { classification: 'needs confirmation' }]) {
     assert.throws(() => buildCatalog(publicEntries, [{ ...claims[0], ...change }, ...claims.slice(1)], relationships))
   }
+  const crossProjectSource = { ...claims[0], source: { entryId: 'synkrita-engineering-delivery' } }
+  assert.throws(() => buildCatalog(publicEntries, [crossProjectSource, ...claims.slice(1)], relationships))
   assert.throws(() => buildCatalog(publicEntries, [...claims, claims[0]], relationships))
   assert.throws(() => buildCatalog(publicEntries, claims.slice(1), relationships))
 })
@@ -82,6 +84,74 @@ if (process.env.PAGES_VERIFY_DIST === '1') {
   const read = path => readFileSync(new URL('.' + path, dist), 'utf8')
   const htmlText = text => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;').replaceAll("'", '&#x27;')
+  test('optional career records use the same dates and evidence anchors on both public views', () => {
+    const payload = JSON.parse(read('/evidence.v1.json'))
+    const schema = JSON.parse(read('/evidence-schema.v1.json'))
+    const { career } = payload
+    assert.ok(schema.properties.career)
+    assert.ok(!schema.required.includes('career'))
+    assert.equal(career.provenance, 'candidate-attested')
+    assert.deepEqual(career.appointments.map(({ title, start, end }) => [title, start, end]), [
+      ['Full-Stack Engineer', '2025-06', 'present'],
+      ['Research Specialist', '2023-10', '2025-05'],
+      ['Undergraduate Research Assistant', '2023-04', '2023-07'],
+      ['Undergraduate Research Assistant', '2021-01', '2022-08'],
+    ])
+    assert.deepEqual(career.education.map(item => item.degree), ['M.S. in Computer Science', 'B.S. in Biomedical Engineering'])
+    assert.deepEqual(career.skills.map(item => item.context), [
+      'professional-engineering', 'professional-research', 'independent-project', 'undergraduate-research', 'academic',
+    ])
+    for (const path of ['/experience/index.html', '/resume/index.html']) {
+      const html = read(path)
+      for (const record of [...career.appointments, ...career.education, ...career.skills]) {
+        assert.ok(html.includes('id="career-' + record.id + '"'))
+        for (const link of record.evidence ?? []) {
+          const [sourcePage, anchor] = link.url.split('#')
+          const href = path.startsWith('/resume/') && sourcePage === '/experience/' ? '#' + anchor : link.url
+          assert.ok(html.includes('href="' + href + '"'))
+          assert.ok(read(sourcePage + 'index.html').includes('id="' + anchor + '"'))
+        }
+      }
+      assert.ok(html.replaceAll('<!-- -->', '').includes('<time dateTime="2025-06">Jun 2025</time> – Present'))
+      assert.match(html, /Candidate-attested career record/)
+      assert.match(html, /Independent project/)
+    }
+    assert.equal(payload.claims.length, 17)
+    assert.equal(payload.relationships.length, 4)
+    assert.equal(payload.briefings.length, 9)
+  })
+
+  test('enriched claims resolve to concise case accounts without changing existing claim anchors', () => {
+    const expected = {
+      ariadne: ['ariadne-ambiguity', 'ariadne-execution', 'ariadne-evidence-eligibility', 'ariadne-discovery-cost',
+        'ariadne-incomplete-upstream', 'ariadne-parity-gate'],
+      synkrita: ['synkrita-transport-qualification', 'synkrita-connector-replay', 'synkrita-bounded-receipt',
+        'synkrita-baseline-narrowing', 'synkrita-proposal-evaluation-gate', 'synkrita-release-reproducibility',
+        'synkrita-operator-preparation', 'synkrita-tool-guidance'],
+    }
+    for (const [projectId, ids] of Object.entries(expected)) {
+      const projectClaims = catalog.claims.filter(claim => claim.projectId === projectId)
+      assert.deepEqual(projectClaims.map(claim => claim.id), ids)
+      const project = catalog.projects.find(item => item.id === projectId)
+      const html = read(project.url + 'index.html')
+      assert.ok(html.includes('id="source-' + project.caseStudy.delivery.id + '"'))
+      for (const claim of projectClaims) {
+        assert.equal(claim.status, 'approved')
+        assert.equal(claim.source.type, 'candidate-published account')
+        assert.ok(html.includes('<details class="evidence-note" id="claim-' + claim.id + '">'))
+        assert.ok(html.includes('id="' + claim.source.url.split('#')[1] + '"'))
+      }
+    }
+    assert.equal(catalog.claims.find(claim => claim.id === 'ariadne-execution').source.entryId, 'ariadne-execution-boundary')
+    assert.equal(catalog.claims.find(claim => claim.id === 'ariadne-ambiguity').source.entryId, 'ariadne-ambiguity')
+    assert.equal(catalog.claims.find(claim => claim.id === 'synkrita-baseline-narrowing').source.entryId, 'synkrita-connector-baseline')
+    const baseline = catalog.claims.find(claim => claim.id === 'synkrita-baseline-narrowing')
+    assert.match(baseline.outcome, /14 in-process HTTP requests.*40.*212 HTTP attempts.*250.*four simulated reviews/)
+    const synkrita = read('/projects/synkrita/index.html')
+    assert.doesNotMatch(synkrita.split('<details class="evidence-note"')[0], /212 HTTP|14 in-process/)
+    assert.match(catalog.claims.find(claim => claim.id === 'synkrita-proposal-evaluation-gate').outcome, /remains unrun/)
+  })
+
   test('built evidence, navigation, semantic controls and limitations match the rendered pages', () => {
     const payload = JSON.parse(read('/evidence.v1.json'))
     assert.deepEqual(payload, JSON.parse(JSON.stringify(catalog)))

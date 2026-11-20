@@ -11,8 +11,8 @@ type Briefing = typeof catalog.briefings[number]
 const comparison = '/briefings/correctness/correctness-reference/reference/'
 const systems = '/briefings/systems/systems-boundaries/boundaries/'
 
-function Evidence({ claim, anchored = false }: { claim: PublicClaim; anchored?: boolean }) {
-  return <details className="evidence-note" id={anchored ? 'claim-' + claim.id : undefined} open={anchored || undefined}>
+function Evidence({ claim, anchored = false, expanded = anchored }: { claim: PublicClaim; anchored?: boolean; expanded?: boolean }) {
+  return <details className="evidence-note" id={anchored ? 'claim-' + claim.id : undefined} open={expanded || undefined}>
     <summary>{anchored ? claim.title : 'Inspect contribution and evidence'}</summary>
     <dl>
       <dt>Contribution</dt><dd>{claim.contribution}</dd>
@@ -53,7 +53,7 @@ function Home() {
     <nav className="onboarding-links" aria-label="Ways to explore">
       <a href="/experience/"><strong>Evaluate my experience</strong><span>Roles, technologies and project maturity</span></a>
       <a href="#questions"><strong>Explore engineering decisions</strong><span>Compare work and inspect how it was tested</span></a>
-      <a href={agentGuidePath}><strong>Bring your AI agent</strong><span>Share the evidence and ask your own question</span></a>
+      <a href={agentGuidePath}><strong>Bring your AI agent</strong><span>Share the homepage and ask your own question</span></a>
     </nav>
     <p className="home-data-link"><a href={evidencePath} type="application/json">Public engineering evidence (JSON)</a></p>
     <section className="editorial-section" aria-labelledby="selected">
@@ -154,12 +154,14 @@ function Projects() {
 function Case({ project }: { project: Project }) {
   const associated = catalog.decisions.filter(decision => project.related?.includes(decision.id))
   const experience = catalog.experience.filter(entry => project.related?.includes(entry.id))
+  const projectClaims = catalog.claims.filter(claim => claim.projectId === project.id)
+  const delivery = project.caseStudy?.delivery
   return <>
     <Intro label={project.maturity || 'Case study'} title={project.title}><p>{project.summary}</p>
       <p className="technology-line">{project.technologies?.join(' · ')}</p></Intro>
     <div className="case-content">
       {experience.map(entry => <section key={entry.id} id={'source-' + entry.id}><h2>Contribution and role</h2><p>{entry.summary}</p></section>)}
-      {catalog.claims.filter(claim => claim.projectId === project.id).map(claim => <Evidence key={claim.id} claim={claim} anchored />)}
+      {!delivery && projectClaims.map(claim => <Evidence key={claim.id} claim={claim} anchored />)}
       <section id={'source-' + project.id} aria-labelledby="technical-account">
         <h2 id="technical-account">{project.caseStudy?.subtitle || 'Technical account'}</h2>
         <p className="evidence-meta">Candidate-authored account · {project.caseStudy?.status}</p>
@@ -170,6 +172,11 @@ function Case({ project }: { project: Project }) {
           {section.comparisons?.map(row => <dl key={row.label}><dt>{row.label}</dt><dd>{row.conventional}</dd><dd>{row.prototype}</dd></dl>)}
         </section>)}
       </section>
+      {delivery && <section id={'source-' + delivery.id}>
+        <h2>{delivery.heading}</h2>
+        {delivery.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
+        {projectClaims.map(claim => <Evidence key={claim.id} claim={claim} anchored expanded={false} />)}
+      </section>}
     </div>
     <p><a href="/projects/">All projects</a></p>
   </>
@@ -187,20 +194,65 @@ function Decisions() {
     </section>)}</div></>
 }
 
+const careerMonth = new Intl.DateTimeFormat('en', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+
+function CareerMonth({ value }: { value: string }) {
+  return <time dateTime={value}>{careerMonth.format(new Date(value + '-01T00:00:00Z'))}</time>
+}
+
+function CareerLinks({ links, resume }: { links: readonly { label: string; url: string }[]; resume: boolean }) {
+  return <p className="evidence-links">{links.map(({ label, url }) =>
+    <a key={url} href={resume && url.startsWith('/experience/#') ? url.slice('/experience/'.length) : url}>{label}</a>
+  )}</p>
+}
+
 function Experience({ resume }: { resume: boolean }) {
+  const { career } = catalog
   return <>
     <Intro label={resume ? identity.name : 'Engineering experience'} title={resume ? 'Résumé summary' : 'Experience'}>
-      {resume ? <><p>{identity.summary}</p><p className="resume-scope">A printable selection of public portfolio work. Education and full employment history are outside its scope.</p></> :
-        'Professional and independent engineering work, with the context and maturity of each project.'}
+      {resume ? <><p>{identity.summary}</p><p className="resume-scope">A printable summary of selected employment, research, education, and engineering projects.</p></> :
+        career.progression}
     </Intro>
-    <div className="project-index">{catalog.experience.map(entry => {
-      const project = catalog.projects.find(item => entry.related?.includes(item.id))
-      return <article key={entry.id} id={'experience-' + entry.id}>
-        <h2><a href={project?.url || '/projects/'}>{project?.title || entry.title}</a></h2>
-        <div><p>{entry.summary}</p><p className="evidence-meta">Candidate-authored account · {project?.maturity}</p>
-          <p className="technology-line">{entry.technologies?.join(' · ')}</p></div>
-      </article>
-    })}</div>
+    <section className="editorial-section" aria-labelledby="career-appointments">
+      <h2 id="career-appointments">Employment and research appointments</h2>
+      <p className="evidence-meta">Candidate-attested career record</p>
+      <div className="project-index career-list">{career.appointments.map(record => <article key={record.id} id={'career-' + record.id}>
+        <div>
+          <h3>{record.title}</h3>
+          <p><CareerMonth value={record.start} /> – {record.end === 'present' ? 'Present' : <CareerMonth value={record.end} />}</p>
+        </div>
+        <div>
+          <p><strong>{record.institution}</strong> · {record.affiliation}</p>
+          <p>{record.summary}</p>
+          {record.evidence && <CareerLinks links={record.evidence} resume={resume} />}
+        </div>
+      </article>)}</div>
+    </section>
+    <section className="editorial-section" aria-labelledby="career-education">
+      <h2 id="career-education">Education</h2>
+      <div className="project-index career-list">{career.education.map(record => <article key={record.id} id={'career-' + record.id}>
+        <h3>{record.institution}</h3>
+        <div><p>{record.degree}</p><p className="evidence-meta">{record.academicEmphasis}</p></div>
+      </article>)}</div>
+    </section>
+    <section className="editorial-section" aria-labelledby="career-skills">
+      <h2 id="career-skills">Skills in context</h2>
+      <div className="project-index career-list">{career.skills.map(group => <article key={group.id} id={'career-' + group.id}>
+        <h3>{group.label}</h3>
+        <div><p>{group.summary}</p><CareerLinks links={group.evidence} resume={resume} /></div>
+      </article>)}</div>
+    </section>
+    <section className="editorial-section" aria-labelledby="project-experience">
+      <h2 id="project-experience">Project experience</h2>
+      <div className="project-index career-list">{catalog.experience.map(entry => {
+        const project = catalog.projects.find(item => entry.related?.includes(item.id))
+        return <article key={entry.id} id={'experience-' + entry.id}>
+          <h3><a href={project?.url || '/projects/'}>{project?.title || entry.title}</a></h3>
+          <div><p>{entry.summary}</p><p className="evidence-meta">{project?.context === 'independent' ? 'Independent project' : 'Professional project'} · {project?.maturity}</p>
+            <p className="technology-line">{entry.technologies?.join(' · ')}</p></div>
+        </article>
+      })}</div>
+    </section>
   </>
 }
 
@@ -254,8 +306,8 @@ export function PublicPortfolio({ initialPath, publication = {} }: { initialPath
     <main className="page-width" id="main" tabIndex={-1} ref={main}>
       {brief ? <Brief key={path} brief={brief} choose={choose} /> : project ? <Case project={project} /> :
         path === agentGuidePath ? <>
-          <Intro label="Public engineering evidence" title="Bring your AI agent">
-            Evaluate my work with your own AI assistant. Ask how my documented experience might apply to your team or project, and ask it to show the evidence and uncertainties behind its answer.
+          <Intro label="Public engineering evidence" title="Ask your AI about my engineering experience">
+            This portfolio brings together documented contributions, technical decisions, validation, and career history so an assistant can form its own assessment.
           </Intro><AgentGuide publication={publication} />
         </> : path === mechanismPath ? <>
           <Intro label="Evidence, interpretation and presentation" title="How this portfolio works">

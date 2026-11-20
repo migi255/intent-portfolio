@@ -16,6 +16,7 @@ export type Kind = typeof kinds[number]
 export interface CaseStudy {
   subtitle: string
   status: string
+  delivery?: { id: string; heading: string; paragraphs: readonly string[] }
   sections: readonly {
     heading: string
     paragraphs: readonly string[]

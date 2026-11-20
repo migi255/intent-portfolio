@@ -58,7 +58,7 @@ const ariadneFocus: readonly Focus[] = [
     id: 'ariadne-ambiguity', title: 'Unresolved is a valid result',
     capabilities: ['experimental design', 'evaluation-driven decisions', 'validation'],
     paragraphs: [
-      'Early synthetic tests exposed a problem: Ariadne could select the wrong relationship when several looked plausible. The revised system leaves those cases unresolved. In the ambiguity control, the original version answered all 10 cases incorrectly. The revised version abstained in all 10. The new rules required more exploration.',
+      'Early synthetic tests exposed a problem: Ariadne could select the wrong relationship when several looked plausible. The revised system leaves those cases unresolved. In the ambiguity control, the first version returned incomplete answers. The revised version withheld those answers, with a larger search budget.',
     ],
   },
 ]
@@ -68,7 +68,7 @@ const synkritaBaseline: Focus = {
   capabilities: ['API integration', 'experimental design', 'evaluation-driven decisions'],
   paragraphs: [
     'Synkrita started by testing whether an adaptive layer could coordinate scientific connectors better than a conventional workflow. In a local replay, both workflows reached the same evidence and citations. Synkrita made more requests to get there.',
-    'Caching and reusing previously reviewed rules also matched the prototype in controlled comparisons. That narrowed Synkrita’s role to checking evidence, recording where it came from, and reusing reviewed integration decisions. Clearer tool guidance took priority over a more elaborate scheduler.',
+    'I required a conventional comparison that could retain and update the same reviewed rules. When both approaches performed equally in that comparison, I redirected the work toward diagnosing failures and proposing interventions.',
   ],
 }
 
@@ -147,10 +147,18 @@ export const publicProjects: readonly Entry[] = [
     categories: ['backend', 'data', 'architecture'],
     technologies: ['Python', 'Pydantic', 'SQLite', 'RDF', 'SPARQL'],
     capabilities: ['AI engineering', 'language model integration', 'AI output validation', 'validation', 'experimental design', 'evaluation-driven decisions', 'data modeling', 'persistence', 'API integration', 'AI-assisted development', 'knowledge graphs'],
-    experience: 'Defined which operations a model could propose and which the software could execute. Directed AI-assisted implementation and revised the exploration rules after synthetic evaluations. Kept inconclusive results in the evaluation record.',
+    experience: 'Reported live query failures and set regression criteria for the agent-assisted fixes. Defined when retained structural evidence could be reused and when a scientific interpretation needed operator approval.',
     caseStudy: {
       subtitle: 'Model interpretation, runtime authority, and reusable evidence',
       status: 'Research prototype. Evaluated in controlled synthetic tests.',
+      delivery: {
+        id: 'ariadne-engineering-delivery',
+        heading: 'Bounded execution and reusable evidence',
+        paragraphs: [
+          'When live Ask requests failed, I commissioned a diagnosis and set regression criteria that preserved runtime control. The agent corrected the request contract and added a bounded existence check after a follow-up exposed a gap in the supported operations.',
+          'In the evidence-reuse work, I specified a bounded local investigation and set the conditions for structural observations to inform a later investigation. Scientific interpretations still require operator approval. Separate experiments tested when the prototype should withhold an answer and how much discovery work reuse could save.',
+        ],
+      },
       sections: [
         ...ariadneFocus.map(decisionSection),
         { heading: 'An incomplete answer that looks complete', paragraphs: [
@@ -169,14 +177,23 @@ export const publicProjects: readonly Entry[] = [
     experience: 'I work with researchers to define what they need from a shared interface to scientific datasets and tools. Those requirements guide the architecture and implementation. Connector comparisons narrowed the prototype’s role to checking evidence and reusing reviewed integration decisions.',
     caseStudy: {
       subtitle: 'When does another integration layer earn its place?',
-      status: 'Research prototype. Staging package prepared.',
+      status: 'Research prototype. Verified local release candidate.',
+      delivery: {
+        id: 'synkrita-engineering-delivery',
+        heading: 'From transport qualification to a verified local candidate',
+        paragraphs: [
+          'I reproduced transport failures in a terminal, verified the qualification checks after an agent patch, and authorized the local commit. The prototype then traced a bounded request through to a persistent citation and added an offline intake path while keeping the live limit.',
+          'I required a conventional workflow that could reuse the same reviewed information. After that comparison reached parity, I redirected the work toward useful intervention proposals and specified a harder follow-up study. The paired study remains unrun.',
+          'For the pilot, I specified a shared catalogue, private investigations, and a reproducible operator handoff. The agent prepared the package. A separate investigator rebuilt and tested the local candidate. Historical records describe a local synthetic operator rehearsal. Target-host staging remains unverified.',
+        ],
+      },
       sections: [
         decisionSection(synkritaBaseline),
         { heading: 'Large responses stay off the live path', paragraphs: [
           'One publication response was too large for the live request limit. Synkrita kept the limit and imported the response offline. The importer preserved the original response and each record’s position within it. Each record shows what the catalogue returned. The cited material still has to support the scientific claim.',
         ] },
         { heading: 'What would justify the next layer?', paragraphs: [
-          'The prototype tests evidence handling for AI clients and has a reproducible staging package. The staging design separates shared evidence from private investigations. Real client integration, deployment validation, and independent scientific review remain open.',
+          'The prototype tests evidence handling for AI clients and has a verified local release candidate. The pilot design separates shared evidence from private investigations. Real client integration, deployment validation, and independent scientific review remain open.',
           'The longer-term goal is to give researchers one interface for datasets and tools across the NIH Common Fund ecosystem. The plan is to connect multiple tool servers through the Model Context Protocol (MCP). Those integrations remain planned.',
           'A useful next comparison would measure verification and correction effort on unfamiliar investigations at the same standard of evidence.',
         ], flowCaption: 'Intended staging request flow', flow: ['Research client', 'Read service', 'Scoped retained records'] },

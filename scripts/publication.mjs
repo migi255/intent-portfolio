@@ -47,6 +47,9 @@ for (const [path, title] of pages) {
 const publicReferences = [
   ...catalog.claims.flatMap(claim => [claim.url, claim.source.url]),
   ...catalog.decisions.map(decision => decision.url),
+  ...catalog.career.appointments.flatMap(record => [record.url, ...(record.evidence ?? []).map(link => link.url)]),
+  ...catalog.career.education.map(record => record.url),
+  ...catalog.career.skills.flatMap(record => [record.url, ...record.evidence.map(link => link.url)]),
 ]
 for (const url of publicReferences) {
   const [path, anchor] = url.split('#')
@@ -117,6 +120,25 @@ const schema = {
 schema.properties.interpretationGuide = object({
   documented: string, interpretation: string, extrapolation: string,
   attribution: string, references: string, presentation: string,
+})
+const month = { type: 'string', pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$' }
+const appointmentContexts = ['professional-engineering', 'professional-research', 'undergraduate-research']
+const evidenceLinks = { ...list(object({ label: string, url: localUrl })), minItems: 1 }
+const appointment = object({
+  id: identifier, title: string, institution: string, affiliation: string,
+  context: { enum: appointmentContexts }, start: month, end: { anyOf: [month, { const: 'present' }] },
+  summary: string, url: localUrl,
+})
+appointment.properties.evidence = evidenceLinks
+schema.properties.career = object({
+  provenance: { const: 'candidate-attested' },
+  progression: string,
+  appointments: list(appointment),
+  education: list(object({ id: identifier, institution: string, degree: string, academicEmphasis: string, url: localUrl })),
+  skills: list(object({
+    id: identifier, context: { enum: [...appointmentContexts, 'independent-project', 'academic'] },
+    label: string, summary: string, evidence: evidenceLinks, url: localUrl,
+  })),
 })
 const payload = JSON.stringify(catalog)
 await writeFile(new URL('evidence.v1.json', dist), payload)

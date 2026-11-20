@@ -1,93 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
 import { catalog, evidencePath } from '../evidence/catalog.js'
-import { agentPrompt, agentTasks, copyAgentPrompt, evidenceUrl, isAgentTask, publicOrigin,
-  type AgentTask, type PublicationInfo } from '../evidence/handoff.js'
+import { evidenceUrl, type PublicationInfo } from '../evidence/handoff.js'
 
 export const agentGuidePath = '/bring-your-agent/'
 export const mechanismPath = '/how-it-works/'
 
 export function AgentGuide({ publication }: { publication: PublicationInfo }) {
-  const [origin, setOrigin] = useState<string>()
-  const [task, setTask] = useState<AgentTask>()
-  const [message, setMessage] = useState('')
-  const [addressMessage, setAddressMessage] = useState('')
-  const input = useRef<HTMLTextAreaElement>(null)
-  const copyAttempt = useRef(0)
-  useEffect(() => setOrigin(window.location.origin), [])
-
-  const homeUrl = evidenceUrl('/', publication.origin, origin)
-  const url = evidenceUrl(evidencePath, publication.origin, origin)
-  const schemaPath = catalog.presentation.documentation
-  const schemaUrl = evidenceUrl(schemaPath, publication.origin, origin)
-  const prompt = agentPrompt(task, url)
-  const ready = Boolean(origin && publicOrigin(publication.origin ?? origin))
+  const homepage = evidenceUrl('/', publication.origin)
   const generatedDate = publication.generatedAt?.slice(0, 10)
 
-  async function copyAddress(event: React.MouseEvent<HTMLButtonElement>, address: string) {
-    const link = event.currentTarget.parentElement?.querySelector('a')
-    const clipboard = navigator.clipboard
-    const copied = await copyAgentPrompt(address, clipboard?.writeText.bind(clipboard))
-    if (!copied) link?.focus()
-    setAddressMessage(copied ? 'URL copied: ' + address : 'Use your browser’s copy link command.')
-  }
-
-  async function copy() {
-    const attempt = ++copyAttempt.current
-    const clipboard = navigator.clipboard
-    const copied = await copyAgentPrompt(prompt, clipboard?.writeText.bind(clipboard))
-    if (attempt !== copyAttempt.current) return
-    if (!copied) {
-      input.current?.focus()
-      input.current?.select()
-    }
-    setMessage(copied ? 'Prompt copied.' : 'Prompt selected. Use your device’s copy command.')
-  }
-
   return <div className="guide-content">
-    <section aria-labelledby="package-heading">
-      <h2 id="package-heading">Share a URL and ask your own question</h2>
-      <p>Give your assistant the portfolio URL or the direct evidence URL. Ask about a team, a role, or a technical challenge. For example, how might this experience apply to a small team building reliable scientific software?</p>
-      <p className="evidence-meta">{'Schema version ' + catalog.version}{generatedDate &&
-        <> · Export generated <time dateTime={publication.generatedAt}>{generatedDate}</time> (UTC)</>}</p>
-      <dl className="package-links">
-        <dt>Portfolio URL</dt><dd><a href={homeUrl}>{homeUrl}</a>
-          {ready && <button type="button" onClick={event => void copyAddress(event, homeUrl)}>Copy portfolio URL</button>}</dd>
-        <dt>Public evidence URL</dt><dd><a href={url}>{url}</a>
-          {ready && <button type="button" onClick={event => void copyAddress(event, url)}>Copy evidence URL</button>}</dd>
-        <dt>Schema URL</dt><dd><a href={schemaUrl}>{schemaUrl}</a></dd>
-      </dl>
-      <p className="copy-status" role="status">{addressMessage}</p>
-      <p>If your assistant misses the evidence link on the homepage, share the direct URL. If it accepts uploads, <a href={evidencePath} download>download the JSON</a> and attach it with the portfolio URL so its citations resolve.</p>
+    <section aria-labelledby="agent-examples">
+      <p>Share the <a href={homepage}>portfolio homepage</a> with your preferred AI assistant and ask how my experience might apply to your team, project, or technical challenges.</p>
+      <h2 id="agent-examples">Example questions</h2>
+      <ul className="agent-questions">
+        <li>How might Miguel contribute to a team building an AI-enabled research platform?</li>
+        <li>What evidence supports his ability to work independently on backend systems?</li>
+        <li>What did he personally validate, and what should we ask him about in an interview?</li>
+      </ul>
+      <p>An assistant can use the site’s structured evidence to make its own assessment. It should cite documented work, label what it infers, and flag where evidence is missing. Website access and automatic evidence discovery vary by assistant.</p>
     </section>
-    <details className="evidence-note agent-prompt-details">
-      <summary>Optional instructions and example questions</summary>
-      <p>Paste the instructions into your assistant and add any question. For a role assessment, paste the job description there.</p>
-      <div className="prompt-panel">
-        <label htmlFor="agent-task">Task</label>
-        <select id="agent-task" value={task ?? ''} disabled={!ready} onChange={event => {
-          const value = event.target.value
-          if (value && !isAgentTask(value)) return
-          copyAttempt.current++
-          setTask(isAgentTask(value) ? value : undefined)
-          setMessage('')
-        }}>
-          <option value="">Bring your own question</option>
-          {Object.entries(agentTasks).map(([id, item]) => <option key={id} value={id}>{item.label}</option>)}
-        </select>
-        <label htmlFor="agent-prompt">Prompt to paste</label>
-        <textarea id="agent-prompt" readOnly rows={10} value={prompt} ref={input} />
-        <button type="button" disabled={!ready} onClick={() => void copy()}>Copy prompt</button>
-        <span className="copy-status" role="status">{message}</span>
-      </div>
-      <noscript><p>Copy the text manually. If the evidence URL is relative, copy the full address from the evidence link or attach the downloaded file.</p></noscript>
+    <details className="evidence-note guide-assessment">
+      <summary>See an example assessment</summary>
+      <DemoBriefing />
     </details>
-    <DemoBriefing />
-    <section aria-labelledby="access-heading">
-      <h2 id="access-heading">What your assistant can do</h2>
-      <p>An assistant with URL retrieval may be able to read the static JSON directly. One with document or interface generation can use the same claims in a presentation of its own. Check its citations and qualifications against the sources.</p>
-      <p>Future MCP-aware clients could read the package through a compatible adapter. This export is a static file. Hosted MCP and universal assistant access are outside the current integration.</p>
-      <p><a href={mechanismPath}>See how the site and assistant routes differ</a></p>
-    </section>
+    <p className="evidence-links"><a href={mechanismPath}>How this portfolio works</a></p>
+    <p className="evidence-meta">Technical references · <a href={evidencePath}>Evidence JSON</a> · <a href={catalog.presentation.documentation}>Schema</a>
+      {generatedDate && <> · Export generated <time dateTime={publication.generatedAt}>{generatedDate}</time> (UTC)</>}
+    </p>
   </div>
 }
 
@@ -148,8 +87,8 @@ const siteSteps = [
 ]
 
 const agentSteps = [
-  ['Get the package', 'Open the public JSON or download it.'],
-  ['Give it to your assistant', 'Provide the URL or file with an objective.'],
+  ['Share the homepage', 'Give your assistant the portfolio URL and ask your own question.'],
+  ['Find the evidence', 'The homepage links to structured engineering and career evidence.'],
   ['Let it choose evidence', 'The assistant can connect any public claims relevant to the question, including combinations outside the site’s briefings.'],
   ['Read its briefing', 'The assistant uses whichever output formats it supports.'],
   ['Check original references', 'Ask it to retain sources and label what it inferred, what it assumed, and what would need verification.'],

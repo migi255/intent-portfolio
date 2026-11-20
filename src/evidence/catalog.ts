@@ -1,3 +1,4 @@
+import { career } from '../data/career.js'
 import { publicEntries } from '../data/public.js'
 import type { Entry } from '../data/content.js'
 import { claims, relationships } from './approved.js'
@@ -44,9 +45,11 @@ export function buildCatalog(entries: readonly Entry[], inputs: readonly Claim[]
 
   for (const claim of approved) {
     const project = projects.find(item => item.id === claim.projectId)
+    const sourceId = claim.source.entryId
+    const hasSource = project?.caseStudy?.delivery?.id === sourceId ||
+      ((project?.id === sourceId || project?.related?.includes(sourceId)) && records.some(entry => entry.id === sourceId))
     if (Object.keys(claim).some(key => !claimFields.has(key)) ||
-        !project || (project.id !== claim.source.entryId && !project.related?.includes(claim.source.entryId)) ||
-        !records.some(entry => entry.id === claim.source.entryId) ||
+        !project || !stableId.test(sourceId) || !hasSource ||
         ![claim.title, claim.contribution, claim.role, claim.implementation, claim.validation, claim.outcome, claim.limit].every(text) ||
         !claim.capabilities.length || !claim.capabilities.every(text) ||
         (claim.details !== undefined && !validClaimDetails(claim.details)) ||
@@ -82,7 +85,7 @@ export function buildCatalog(entries: readonly Entry[], inputs: readonly Claim[]
   if (new Set(briefings.map(brief => brief.url)).size !== briefings.length) throw new Error('Duplicate briefing URL')
 
   return {
-    version: 1, identity, evidenceUrl: evidencePath, experienceUrl: '/experience/', projectsUrl: '/projects/', resumeUrl: '/resume/', decisionsUrl: '/decisions/',
+    version: 1, identity, career, evidenceUrl: evidencePath, experienceUrl: '/experience/', projectsUrl: '/projects/', resumeUrl: '/resume/', decisionsUrl: '/decisions/',
     projects: projects.map(project => ({ ...project, url: projectUrl(project.id),
       maturity: project.id === 'tohsa' ? 'Development-stage collaboration' :
         project.context === 'professional' ? 'Established research application' : project.caseStudy?.status })),
@@ -98,7 +101,7 @@ export function buildCatalog(entries: readonly Entry[], inputs: readonly Claim[]
       interpretation: 'Relationships are reviewed interpretations for this site. You may reason across any claims. Label new interpretations and cite the claims that support them.',
       extrapolation: 'Treat candidate fit and proposed responsibilities as hypotheses. Explain relevance, assumptions and uncertainties, and suggest how to test them. Missing public evidence does not establish a lack of ability.',
       attribution: 'Role describes personal responsibility. Optional attribution roles and scope are partial. AI-assisted work can involve design or direction without establishing code authorship. An omitted field means the package does not specify it.',
-      references: 'Cite stable claim IDs and source anchors. Resolve root-relative URLs against the portfolio origin. The package includes the claim text and qualifications in one request.',
+      references: 'Cite stable claim IDs and source anchors. Resolve root-relative URLs against the portfolio origin. Source anchors point to candidate-published accounts. Private inspection and reproduced checks are described in the records, and those anchors do not link to the underlying private artifacts. The package includes the claim text and qualifications in one request. Career appointments and degrees are candidate-attested. Contextual skills link to those records or to separately classified project evidence.',
       presentation: 'Use your own output format. The presentation plans describe this site’s briefings and do not constrain external analysis.',
     },
     presentation: {
