@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run typecheck && tsc -p tsconfig.publish.json && node scripts/publication.mjs --check && vite build && node scripts/publication.mjs",
     "preview": "vite preview",
     "lint": "npm run typecheck",
     "test": "tsc -p tsconfig.test.json && node --test tests/*.test.mjs"

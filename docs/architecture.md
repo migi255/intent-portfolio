@@ -1,6 +1,10 @@
 # Architecture
 
-Vite builds a static React application. The browser loads local structured content and runs the full intent pipeline.
+Vite builds the React application. A Node publication step renders the public overview, projects, experience, résumé, decision index and canonical briefings as static HTML. The same approved catalog produces the versioned evidence artifact. React reuses the prerendered markup and enhances briefing navigation. See [the evidence contract](evidence.md).
+
+## Legacy explorer
+
+The optional explorer runs the deterministic intent pipeline in the browser. The previous `view`, `filter`, `presentation`, and older `q` URLs still open this surface. The `#results` anchor also identifies the explorer on the home document.
 
 ```mermaid
 flowchart LR
@@ -13,7 +17,7 @@ flowchart LR
 
 | Module | Responsibility |
 | --- | --- |
-| `src/data/content.ts` | Typed records for projects, experience, decisions, technologies, capabilities, dates, relationships, evidence status, and optional outcomes |
+| `src/data/content.ts` and `src/data/public.ts` | Typed records for projects, experience, decisions, technologies, capabilities, dates, relationships, evidence status, and optional outcomes |
 | `src/intent/` | Controlled vocabulary, phrase normalization, Boolean grammar, typed expression, and explicit resolution outcomes |
 | `src/evaluation/evaluate.ts` | Three-valued matching against a supplied collection in source order |
 | `src/planning/plan.ts` | Selection and validation of declarative block types and record IDs |
@@ -38,7 +42,7 @@ Typed text and clarification state live in document memory. History entries carr
 
 ## Content and future integrations
 
-Files under `src/data/` are public build inputs. The public project and experience records live in `src/data/projects.ts`. The portfolio's own architectural decision describes this implementation. Keep private source documents and evidence mapping outside the build graph and tracked files. Approved content can carry a publication-safe evidence reference.
+The approved public modules supply the production build. The empty tracked review module supports the separate development overlay. The public project and experience records live in `src/data/projects.ts`. The portfolio's own architectural decision describes this implementation. Keep private source documents and evidence mapping outside the build graph and tracked files. Approved content can carry a publication-safe evidence reference.
 
 Core features have no network-service dependency. A future contact service can be an optional client adapter calling a Pages Function without changing the intent or evaluation modules. Keep private credentials on the server.
 

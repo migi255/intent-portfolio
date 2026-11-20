@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "outDir": ".test-build/publish",
+    "rootDir": "src"
+  },
+  "files": ["src/PublicPortfolio.tsx", "src/data/review.ts"],
+  "include": []
+}

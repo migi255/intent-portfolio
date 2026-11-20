@@ -91,7 +91,7 @@ export function App({ navigation, initialView }: {
       <a className="skip-link" href="#main">Skip to content</a>
       <header className="site-header">
         <div className="page-width header-inner">
-          <a className="wordmark" href="./"><span className="brand-mark" aria-hidden="true" />Miguel Mazumder</a>
+          <a className="wordmark" href="/"><span className="brand-mark" aria-hidden="true" />Miguel Mazumder</a>
           <ThemeControl />
         </div>
       </header>

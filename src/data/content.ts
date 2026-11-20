@@ -1,4 +1,4 @@
-import { publicProjects } from './projects.js'
+import { publicEntries } from './public.js'
 import { reviewEntries } from './review.js'
 
 export const categories = ['backend', 'frontend', 'infrastructure', 'data', 'architecture'] as const
@@ -46,23 +46,6 @@ export interface Entry {
   caseStudy?: CaseStudy
   caseStudyOnly?: true
 }
-
-const publicEntries: readonly Entry[] = [
-  ...publicProjects,
-  {
-    id: 'intent-pipeline', kind: 'decision', title: 'One catalog supports several views',
-    caseStudyOnly: true,
-    summary: 'The portfolio evaluates symbolic criteria before selecting a layout.',
-    categories: ['architecture', 'frontend'], technologies: ['TypeScript', 'React'],
-    capabilities: ['validation', 'accessibility'], context: 'independent',
-    evidence: { status: 'approved', reference: 'Portfolio implementation' },
-    decisionParagraphs: [
-      'The same records need to work as project cards, an experience comparison, and a technical review. The evaluator returns matches, and the planner chooses a registered layout for those records.',
-      'Keeping layout out of the search result lets the same criteria survive a change of view. New terms and layouts still need to be added explicitly.',
-    ],
-    stages: ['Parse intent', 'Evaluate criteria', 'Plan layout', 'Render components'],
-  },
-]
 
 // Local review records can override the public entry with the same ID.
 export const entries: readonly Entry[] = [

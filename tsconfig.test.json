@@ -7,5 +7,5 @@
     "outDir": ".test-build",
     "rootDir": "src"
   },
-  "include": ["src/data", "src/intent", "src/evaluation", "src/planning", "src/state"]
+  "include": ["src/data", "src/evidence", "src/intent", "src/evaluation", "src/planning", "src/state"]
 }

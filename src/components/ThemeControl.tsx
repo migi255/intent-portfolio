@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react'
 
-import { applyTheme, darkSchemeQuery, isThemePreference, persistTheme, watchSystemTheme, type ThemePreference } from '../state/theme'
+import { applyTheme, darkSchemeQuery, isThemePreference, persistTheme, watchSystemTheme, type ThemePreference } from '../state/theme.js'
 
 export function ThemeControl() {
-  const root = document.documentElement
-  const [preference, setPreference] = useState<ThemePreference>(() => {
-    const bootPreference = root.dataset.themePreference
-    return isThemePreference(bootPreference) ? bootPreference : 'system'
-  })
+  const [preference, setPreference] = useState<ThemePreference>('system')
 
-  useEffect(() => watchSystemTheme(root, window.matchMedia(darkSchemeQuery)), [root])
+  useEffect(() => {
+    const root = document.documentElement
+    const bootPreference = root.dataset.themePreference
+    if (isThemePreference(bootPreference)) setPreference(bootPreference)
+    return watchSystemTheme(root, window.matchMedia(darkSchemeQuery))
+  }, [])
 
   function selectTheme(value: string) {
     if (!isThemePreference(value)) return
-    applyTheme(root, value, window.matchMedia(darkSchemeQuery).matches)
+    applyTheme(document.documentElement, value, window.matchMedia(darkSchemeQuery).matches)
     setPreference(value)
     try {
       persistTheme(window.localStorage, value)
